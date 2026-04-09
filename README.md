@@ -152,3 +152,8 @@ src/
 ## Observações
 - A camada de IA está preparada com uma implementação acadêmica e simples, pronta para ser substituída por integração real com OpenAI no futuro.
 - O logout pode ser tratado no frontend removendo o token do armazenamento. Para produção, pode-se usar blacklist/refresh token.
+
+## Desenvolvido por
+
+- **Victor Terrengui Brandi** — RA: 262318806
+- **Joao Claudio Martinez** — RA: 262319640
