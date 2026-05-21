@@ -15,15 +15,21 @@
         <div class="linha-entre">
           <div>
             <h3>{{ evento(inscricao).titulo }}</h3>
-            <p>{{ formatarData(evento(inscricao).data) }} · {{ evento(inscricao).horarioInicio }} - {{ evento(inscricao).horarioFim }}</p>
+            <p v-if="eventoDisponivel(inscricao)">
+              {{ formatarData(evento(inscricao).data) }} - {{ evento(inscricao).horarioInicio }} - {{ evento(inscricao).horarioFim }}
+            </p>
             <p>{{ evento(inscricao).local }}</p>
           </div>
           <span :class="['status-tag', `status-${inscricao.status}`]">{{ formatarStatus(inscricao.status) }}</span>
         </div>
 
         <div class="card-acoes card-acoes-linha">
-          <router-link :to="`/eventos/${evento(inscricao)._id}`" class="btn-detalhe">Ver evento</router-link>
+          <router-link v-if="eventoDisponivel(inscricao)" :to="`/eventos/${evento(inscricao)._id}`" class="btn-detalhe">
+            Ver evento
+          </router-link>
+          <span v-else class="btn-detalhe btn-detalhe-disabled">Evento indisponivel</span>
           <button
+            v-if="podeCancelar(inscricao)"
             type="button"
             class="btn-perigo"
             :disabled="inscricao.status === 'cancelada' || cancelandoId === inscricao._id"
@@ -31,6 +37,9 @@
           >
             {{ cancelandoId === inscricao._id ? 'Cancelando...' : 'Cancelar inscrição' }}
           </button>
+          <span v-else-if="inscricao.status !== 'cancelada'" class="texto-suave inscricao-bloqueio">
+            Cancelamento indisponivel apos a realizacao do evento.
+          </span>
         </div>
 
         <form v-if="podeEnviarFeedback(inscricao)" class="feedback-form" @submit.prevent="enviarFeedback(inscricao)">
@@ -106,10 +115,32 @@ export default {
       }
     },
     evento(inscricao) {
-      return typeof inscricao.eventoId === 'object' ? inscricao.eventoId : {}
+      if (inscricao.eventoId && typeof inscricao.eventoId === 'object') {
+        return inscricao.eventoId
+      }
+
+      return {
+        _id: null,
+        titulo: 'Evento removido ou indisponivel',
+        data: null,
+        horarioInicio: '',
+        horarioFim: '',
+        local: 'Detalhes do evento indisponiveis',
+        status: 'fechado'
+      }
+    },
+    eventoDisponivel(inscricao) {
+      return Boolean(this.evento(inscricao)._id)
     },
     podeEnviarFeedback(inscricao) {
-      return this.evento(inscricao).status === 'encerrado' && inscricao.status !== 'cancelada'
+      return this.eventoDisponivel(inscricao) && this.evento(inscricao).status === 'encerrado' && inscricao.status !== 'cancelada'
+    },
+    podeCancelar(inscricao) {
+      return (
+        this.eventoDisponivel(inscricao) &&
+        this.evento(inscricao).status !== 'encerrado' &&
+        inscricao.status !== 'cancelada'
+      )
     },
     async cancelar(inscricao) {
       this.cancelandoId = inscricao._id

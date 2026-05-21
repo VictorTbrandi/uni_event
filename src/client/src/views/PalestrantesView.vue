@@ -41,7 +41,23 @@
         </div>
         <div class="form-group">
           <label>Foto URL</label>
-          <input v-model="form.fotoUrl" type="url" />
+          <input
+            v-model="form.fotoUrl"
+            type="url"
+            placeholder="https://exemplo.com/foto.jpg"
+            @input="previewFotoComErro = false"
+          />
+          <div v-if="form.fotoUrl" class="foto-url-preview">
+            <img
+              v-if="!previewFotoComErro"
+              :src="form.fotoUrl"
+              alt="Previa da foto do palestrante"
+              @error="previewFotoComErro = true"
+            />
+            <div v-else class="foto-url-preview-erro">
+              Nao foi possivel carregar esta imagem.
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label>Biografia</label>
@@ -64,11 +80,11 @@
     </div>
 
     <div v-else class="eventos-container">
-      <article v-for="p in palestrantes" :key="p._id" class="evento-card">
+      <article v-for="p in palestrantes" :key="p._id" class="evento-card palestrante-card">
         <div v-if="p.fotoUrl && !imagensComErro[p._id]" class="evento-card-image palestrante-foto">
-          <img :src="p.fotoUrl" :alt="`Foto de ${p.nome}`" @error="marcarImagemComErro(p._id)" />
+          <img :src="p.fotoUrl" :alt="`Foto de ${p.nome}`" loading="lazy" @error="marcarImagemComErro(p._id)" />
         </div>
-        <div v-else class="evento-card-image">Palestrante</div>
+        <div v-else class="evento-card-image palestrante-foto palestrante-foto-fallback">Palestrante</div>
         <div class="evento-card-body">
           <h3>{{ p.nome }}</h3>
           <div class="evento-info">
@@ -135,6 +151,7 @@ export default {
       erroForm: null,
       sucesso: null,
       imagensComErro: {},
+      previewFotoComErro: false,
       palestranteParaExcluir: null
     }
   },
@@ -169,6 +186,7 @@ export default {
       this.mostrandoForm = true
       this.erroForm = null
       this.sucesso = null
+      this.previewFotoComErro = false
     },
     async salvar() {
       this.salvando = true
@@ -205,6 +223,7 @@ export default {
       this.mostrandoForm = true
       this.erroForm = null
       this.sucesso = null
+      this.previewFotoComErro = false
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     pedirExclusao(palestrante) {
@@ -234,6 +253,7 @@ export default {
     resetarForm() {
       this.form = formInicial()
       this.editandoId = null
+      this.previewFotoComErro = false
     },
     marcarImagemComErro(id) {
       this.imagensComErro[id] = true

@@ -51,12 +51,22 @@ class InscricaoService {
   }
 
   async cancel(inscricaoId, currentUser) {
-    const inscricao = await Inscricao.findById(inscricaoId);
+    const inscricao = await Inscricao.findById(inscricaoId).populate('eventoId', 'data horarioInicio horarioFim status vagas inscricoesEncerramEm');
     if (!inscricao) throw new ApiError(404, 'Inscricao nao encontrada.');
 
     const isOwner = String(inscricao.usuarioId) === String(currentUser._id);
     if (currentUser.tipoPerfil !== 'admin' && !isOwner) {
       throw new ApiError(403, 'Voce nao pode cancelar esta inscricao.');
+    }
+
+    if (!inscricao.eventoId) {
+      throw new ApiError(404, 'Evento da inscricao nao encontrado.');
+    }
+
+    const totalInscritos = await this.countActiveSubscriptions(inscricao.eventoId._id);
+    const lifecycle = resolveEventoStatus(inscricao.eventoId, totalInscritos);
+    if (lifecycle.status === 'encerrado') {
+      throw new ApiError(400, 'Nao e possivel cancelar inscricao de evento ja realizado.');
     }
 
     inscricao.status = 'cancelada';

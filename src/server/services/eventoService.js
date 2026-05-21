@@ -3,6 +3,8 @@ const Inscricao = require('../models/Inscricao');
 const Categoria = require('../models/Categoria');
 const Palestrante = require('../models/Palestrante');
 const ApiError = require('../utils/ApiError');
+const openMeteoGeocodingService = require('./openMeteoGeocodingService');
+const previsaoTempoService = require('./previsaoTempoService');
 const {
   combineDateAndTime,
   normalizeBaseStatus,
@@ -11,11 +13,22 @@ const {
 
 const activeSubscriptionFilter = { status: { $ne: 'cancelada' } };
 
+const canSeeClosedEvents = (currentUser) => ['admin', 'organizador'].includes(currentUser?.tipoPerfil);
+const createStatusOptions = ['aberto', 'fechado'];
+const updateStatusOptions = ['aberto', 'fechado', 'cancelado'];
+
 const sanitizePayload = (payload) => {
+  const previsaoTempoAtiva = payload.previsaoTempoAtiva === true || payload.previsaoTempoAtiva === 'true';
   const sanitized = {
     ...payload,
     status: normalizeBaseStatus(payload.status),
-    inscricoesEncerramEm: payload.inscricoesEncerramEm || null
+    palestrantes: Array.isArray(payload.palestrantes) ? payload.palestrantes : [],
+    inscricoesEncerramEm: payload.inscricoesEncerramEm || null,
+    previsaoTempoAtiva,
+    cidade: payload.cidade ? String(payload.cidade).trim() : null,
+    uf: payload.uf ? String(payload.uf).trim().toUpperCase() : null,
+    latitude: null,
+    longitude: null
   };
 
   if (sanitized.status !== 'aberto') {
@@ -25,12 +38,24 @@ const sanitizePayload = (payload) => {
   return sanitized;
 };
 
+const assertStatusRules = (status, allowedStatuses, message) => {
+  if (!allowedStatuses.includes(status)) {
+    throw new ApiError(400, message);
+  }
+};
+
 const assertScheduleRules = (payload) => {
   const inicio = combineDateAndTime(payload.data, payload.horarioInicio);
   const fim = combineDateAndTime(payload.data, payload.horarioFim);
+  const now = new Date();
+  now.setSeconds(0, 0);
 
   if (!inicio || !fim) {
     throw new ApiError(400, 'Data e horarios do evento sao invalidos.');
+  }
+
+  if (inicio < now) {
+    throw new ApiError(400, 'Nao e permitido cadastrar ou editar eventos com data e hora retroativas.');
   }
 
   if (fim <= inicio) {
@@ -62,6 +87,18 @@ class EventoService {
     return Inscricao.countDocuments({ eventoId, ...activeSubscriptionFilter });
   }
 
+  async hasActiveSubscription(eventoId, currentUser) {
+    if (!currentUser?._id) return false;
+
+    const inscricao = await Inscricao.findOne({
+      eventoId,
+      usuarioId: currentUser._id,
+      ...activeSubscriptionFilter
+    }).select('_id');
+
+    return Boolean(inscricao);
+  }
+
   async enrich(evento) {
     const inscritosCount = await this.countActiveSubscriptions(evento._id);
     return toPublicEvento(evento, inscritosCount);
@@ -79,37 +116,77 @@ class EventoService {
     }
   }
 
+  async applyWeatherLocation(sanitized) {
+    if (!sanitized.previsaoTempoAtiva) {
+      sanitized.cidade = null;
+      sanitized.uf = null;
+      sanitized.latitude = null;
+      sanitized.longitude = null;
+      return sanitized;
+    }
+
+    if (!sanitized.cidade || !sanitized.uf) {
+      throw new ApiError(400, 'Informe cidade e UF para consultar a previsao do tempo.');
+    }
+
+    const location = await openMeteoGeocodingService.buscarCoordenadas(sanitized.cidade, sanitized.uf);
+    sanitized.cidade = location.cidade;
+    sanitized.uf = location.uf;
+    sanitized.latitude = location.latitude;
+    sanitized.longitude = location.longitude;
+    return sanitized;
+  }
+
   async create(payload, currentUser) {
     const sanitized = sanitizePayload(payload);
+    assertStatusRules(
+      sanitized.status,
+      createStatusOptions,
+      'Ao cadastrar um evento, as inscricoes devem estar abertas ou fechadas.'
+    );
     assertScheduleRules(sanitized);
     await this.assertReferences(sanitized);
+    await this.applyWeatherLocation(sanitized);
 
     const evento = await Evento.create({
       ...sanitized,
       organizadorId: currentUser?._id || null
     });
 
-    return this.findById(evento._id);
+    return this.findById(evento._id, currentUser);
   }
 
-  async findAll() {
+  async findAll(currentUser = null) {
     const eventos = await Evento.find()
       .populate('categoriaId', 'nome')
       .populate('palestrantes', 'nome email instituicao')
       .populate('organizadorId', 'nome email')
       .sort({ data: 1, horarioInicio: 1 });
 
-    return Promise.all(eventos.map((evento) => this.enrich(evento)));
+    const enriched = await Promise.all(eventos.map((evento) => this.enrich(evento)));
+
+    if (canSeeClosedEvents(currentUser)) {
+      return enriched;
+    }
+
+    return enriched.filter((evento) => evento.status === 'aberto');
   }
 
-  async findById(id) {
+  async findById(id, currentUser = null) {
     const evento = await Evento.findById(id)
       .populate('categoriaId', 'nome descricao')
       .populate('palestrantes', 'nome email instituicao areaAtuacao')
       .populate('organizadorId', 'nome email');
 
     if (!evento) throw new ApiError(404, 'Evento nao encontrado.');
-    return this.enrich(evento);
+    const enriched = await this.enrich(evento);
+
+    const canSeeAsSubscriber = await this.hasActiveSubscription(evento._id, currentUser);
+    if (!canSeeClosedEvents(currentUser) && !canSeeAsSubscriber && enriched.status !== 'aberto') {
+      throw new ApiError(404, 'Evento nao encontrado.');
+    }
+
+    return enriched;
   }
 
   async update(id, payload, currentUser) {
@@ -122,12 +199,18 @@ class EventoService {
     }
 
     const sanitized = sanitizePayload(payload);
+    assertStatusRules(
+      sanitized.status,
+      updateStatusOptions,
+      'Ao editar um evento, use inscricoes abertas, fechadas ou evento cancelado.'
+    );
     assertScheduleRules(sanitized);
     await this.assertReferences(sanitized);
+    await this.applyWeatherLocation(sanitized);
 
     Object.assign(evento, sanitized);
     await evento.save();
-    return this.findById(id);
+    return this.findById(id, currentUser);
   }
 
   async delete(id, currentUser) {
@@ -159,6 +242,20 @@ class EventoService {
     return Inscricao.find({ eventoId })
       .populate('usuarioId', 'nome email curso ra')
       .sort({ createdAt: -1 });
+  }
+
+  async getRainForecast(id, currentUser = null) {
+    const evento = await Evento.findById(id);
+    if (!evento) throw new ApiError(404, 'Evento nao encontrado.');
+
+    const enriched = await this.enrich(evento);
+    const canSeeAsSubscriber = await this.hasActiveSubscription(evento._id, currentUser);
+    if (!canSeeClosedEvents(currentUser) && !canSeeAsSubscriber && enriched.status !== 'aberto') {
+      throw new ApiError(404, 'Evento nao encontrado.');
+    }
+
+    const inscritosCount = await this.countActiveSubscriptions(evento._id);
+    return previsaoTempoService.getPrevisaoChuva(evento, inscritosCount);
   }
 }
 

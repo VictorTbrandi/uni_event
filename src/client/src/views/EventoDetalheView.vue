@@ -67,6 +67,42 @@
             </div>
           </div>
 
+          <section v-if="evento.previsaoTempoAtiva" class="detalhe-secao">
+            <h2>Previsao de chuva</h2>
+            <div v-if="carregandoPrevisao" class="texto-suave">Consultando previsao de chuva...</div>
+            <div v-else-if="previsaoChuva" class="previsao-detalhe">
+              <div class="linha-entre">
+                <span :class="['previsao-badge', riscoPrevisaoClasse(previsaoChuva)]">
+                  {{ labelRisco(previsaoChuva.nivelRisco) }}
+                </span>
+                <span class="texto-suave">{{ previsaoChuva.cidade }}{{ previsaoChuva.uf ? `/${previsaoChuva.uf}` : '' }}</span>
+              </div>
+              <p class="previsao-mensagem">{{ previsaoChuva.mensagem }}</p>
+              <div v-if="previsaoChuva.previsaoDisponivel" class="previsao-grid">
+                <div>
+                  <strong>Probabilidade no horario</strong>
+                  <span>{{ formatPercent(previsaoChuva.probabilidadeChuvaHorario) }}</span>
+                </div>
+                <div>
+                  <strong>Probabilidade no dia</strong>
+                  <span>{{ formatPercent(previsaoChuva.probabilidadeChuvaDia) }}</span>
+                </div>
+                <div>
+                  <strong>Chuva no horario</strong>
+                  <span>{{ formatMm(previsaoChuva.chuvaHorarioMm) }}</span>
+                </div>
+                <div>
+                  <strong>Chuva no dia</strong>
+                  <span>{{ formatMm(previsaoChuva.chuvaDiaMm) }}</span>
+                </div>
+                <div>
+                  <strong>Horas com chuva</strong>
+                  <span>{{ previsaoChuva.horasComChuvaDia }}h</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section class="detalhe-secao">
             <h2>Palestrantes</h2>
             <div v-if="palestrantes.length" class="lista-tags">
@@ -111,6 +147,8 @@ export default {
   data() {
     return {
       evento: null,
+      previsaoChuva: null,
+      carregandoPrevisao: false,
       carregando: true,
       inscrevendo: false,
       erro: null,
@@ -157,11 +195,48 @@ export default {
     async carregarEvento() {
       try {
         this.evento = await eventoService.buscarPorId(this.$route.params.id)
+        await this.carregarPrevisaoChuva()
       } catch (error) {
         this.erro = error.message || 'Erro ao carregar evento.'
       } finally {
         this.carregando = false
       }
+    },
+    async carregarPrevisaoChuva() {
+      this.previsaoChuva = null
+      if (!this.evento?.previsaoTempoAtiva) return
+
+      this.carregandoPrevisao = true
+      try {
+        this.previsaoChuva = await eventoService.previsaoChuva(this.evento._id)
+      } catch (error) {
+        this.previsaoChuva = {
+          previsaoDisponivel: false,
+          nivelRisco: 'INDISPONIVEL',
+          mensagem: error.message || 'Nao foi possivel consultar a previsao do tempo no momento.'
+        }
+      } finally {
+        this.carregandoPrevisao = false
+      }
+    },
+    riscoPrevisaoClasse(previsao) {
+      const risco = previsao?.nivelRisco || 'INDISPONIVEL'
+      return `previsao-${risco.toLowerCase()}`
+    },
+    labelRisco(risco) {
+      const labels = {
+        BAIXO_RISCO: 'Baixo risco',
+        RISCO_MODERADO: 'Risco moderado',
+        ALTO_RISCO: 'Alto risco',
+        INDISPONIVEL: 'Indisponivel'
+      }
+      return labels[risco] || 'Indisponivel'
+    },
+    formatPercent(value) {
+      return Number.isFinite(Number(value)) ? `${Number(value)}%` : '-'
+    },
+    formatMm(value) {
+      return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} mm` : '-'
     },
     async inscrever() {
       if (!authStorage.isAuthenticated()) {

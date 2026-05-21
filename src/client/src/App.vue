@@ -26,39 +26,53 @@
             </button>
 
             <div class="nav-dropdown" :class="{ 'is-open': menuAberto }">
-              <span class="nav-secao-label">{{ podeGerenciar ? 'Explorar e gerir' : 'Navegação' }}</span>
-              <router-link to="/" @click="fecharTudo">Eventos</router-link>
-              <router-link to="/palestrantes" @click="fecharTudo">Palestrantes</router-link>
-              <router-link to="/categorias" @click="fecharTudo">Categorias</router-link>
-              <router-link to="/assistente-ia" @click="fecharTudo">Assistente IA</router-link>
+              <div v-if="logado" class="nav-usuario-card">
+                <span class="nav-usuario-nome">{{ nomeUsuario }}</span>
+                <span class="nav-usuario-perfil">{{ labelPerfil }}</span>
+              </div>
 
-              <div class="nav-dropdown-divider"></div>
+              <div class="nav-grupo">
+                <span class="nav-secao-label">Eventos</span>
+                <router-link to="/" @click="fecharTudo">Agenda de eventos</router-link>
+                <router-link v-if="podeGerenciar" to="/palestrantes" @click="fecharTudo">Palestrantes</router-link>
+                <router-link v-if="podeGerenciar" to="/categorias" @click="fecharTudo">Categorias</router-link>
+              </div>
+
+              <div class="nav-grupo">
+                <span class="nav-secao-label">Suporte</span>
+                <router-link to="/assistente-ia" @click="fecharTudo">Assistente IA</router-link>
+              </div>
 
               <template v-if="!logado">
-                <router-link to="/login" @click="fecharTudo">Entrar</router-link>
-                <router-link to="/cadastro" class="nav-item-destaque" @click="fecharTudo">Cadastrar</router-link>
+                <div class="nav-dropdown-divider"></div>
+                <div class="nav-grupo">
+                  <span class="nav-secao-label">Acesso</span>
+                  <router-link to="/login" @click="fecharTudo">Entrar</router-link>
+                  <router-link to="/cadastro" class="nav-item-destaque" @click="fecharTudo">Cadastrar</router-link>
+                </div>
               </template>
 
               <template v-else>
-                <span class="nav-usuario-info">{{ nomeUsuario }} - {{ labelPerfil }}</span>
-                <span v-if="podeGerenciar" class="nav-role-hint">
-                  Ações de gestão aparecem nas telas principais.
-                </span>
-
                 <template v-if="podeAdmin">
                   <div class="nav-dropdown-divider"></div>
-                  <span class="nav-secao-label">Administração</span>
-                  <router-link to="/admin/usuarios" @click="fecharTudo">Usuários</router-link>
+                  <div class="nav-grupo">
+                    <span class="nav-secao-label">Administração</span>
+                    <router-link to="/admin/usuarios" @click="fecharTudo">Usuários</router-link>
+                  </div>
                 </template>
 
                 <div class="nav-dropdown-divider"></div>
-                <span class="nav-secao-label">Minha conta</span>
-                <router-link v-if="podeParticipante" to="/minhas-inscricoes" @click="fecharTudo">Inscrições</router-link>
-                <router-link to="/meus-certificados" @click="fecharTudo">Certificados</router-link>
-                <router-link to="/perfil" @click="fecharTudo">Perfil</router-link>
+                <div class="nav-grupo">
+                  <span class="nav-secao-label">Minha conta</span>
+                  <router-link v-if="podeParticipante" to="/minhas-inscricoes" @click="fecharTudo">Inscrições</router-link>
+                  <router-link to="/meus-certificados" @click="fecharTudo">Certificados</router-link>
+                  <router-link to="/perfil" @click="fecharTudo">Perfil</router-link>
+                </div>
 
                 <div class="nav-dropdown-divider"></div>
-                <a href="#" class="nav-sair" @click.prevent="sair">Sair</a>
+                <div class="nav-grupo">
+                  <a href="#" class="nav-sair" @click.prevent="sair">Sair</a>
+                </div>
               </template>
             </div>
           </div>

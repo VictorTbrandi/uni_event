@@ -4,17 +4,38 @@ const parseTime = (time = '') => {
   return { hour, minute };
 };
 
+const getCalendarDateParts = (date) => {
+  const dateOnlyMatch = typeof date === 'string' ? date.match(/^(\d{4})-(\d{2})-(\d{2})/) : null;
+
+  if (dateOnlyMatch) {
+    return {
+      year: Number(dateOnlyMatch[1]),
+      month: Number(dateOnlyMatch[2]) - 1,
+      day: Number(dateOnlyMatch[3])
+    };
+  }
+
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  return {
+    year: parsedDate.getUTCFullYear(),
+    month: parsedDate.getUTCMonth(),
+    day: parsedDate.getUTCDate()
+  };
+};
+
 const combineDateAndTime = (date, time) => {
   if (!date || !time) return null;
 
-  const parsedDate = new Date(date);
+  const dateParts = getCalendarDateParts(date);
   const parsedTime = parseTime(time);
-  if (Number.isNaN(parsedDate.getTime()) || !parsedTime) return null;
+  if (!dateParts || !parsedTime) return null;
 
   return new Date(
-    parsedDate.getFullYear(),
-    parsedDate.getMonth(),
-    parsedDate.getDate(),
+    dateParts.year,
+    dateParts.month,
+    dateParts.day,
     parsedTime.hour,
     parsedTime.minute,
     0,

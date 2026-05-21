@@ -35,7 +35,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label>Data</label>
-            <input v-model="form.data" type="date" required />
+            <input v-model="form.data" type="date" :min="dataMinima" required />
           </div>
           <div class="form-group">
             <label>Inicio</label>
@@ -50,6 +50,29 @@
           <label>Local</label>
           <input v-model="form.local" type="text" required />
         </div>
+        <section class="subsecao-form">
+          <h3>Previsao do tempo</h3>
+          <label class="checkbox-linha">
+            <input v-model="form.previsaoTempoAtiva" type="checkbox" />
+            Consultar previsao de chuva neste evento
+          </label>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Cidade</label>
+              <input v-model="form.cidade" type="text" :required="form.previsaoTempoAtiva" />
+            </div>
+            <div class="form-group">
+              <label>UF</label>
+              <select v-model="form.uf" :required="form.previsaoTempoAtiva">
+                <option value="">Selecione</option>
+                <option v-for="uf in ufs" :key="uf" :value="uf">{{ uf }}</option>
+              </select>
+            </div>
+          </div>
+          <p class="texto-suave texto-formulario">
+            Esses dados serao usados apenas para consultar a previsao de chuva do evento.
+          </p>
+        </section>
         <div class="form-grid">
           <div class="form-group">
             <label>Carga horaria</label>
@@ -73,24 +96,33 @@
           <div class="form-group">
             <label>Inscricoes</label>
             <select v-model="form.status">
-              <option value="fechado">Fechadas</option>
-              <option value="aberto">Abertas</option>
-              <option value="encerrado" disabled>Encerrado automaticamente</option>
-              <option value="cancelado">Cancelado</option>
+              <option v-for="opcao in opcoesStatusFormulario" :key="opcao.valor" :value="opcao.valor">
+                {{ opcao.rotulo }}
+              </option>
             </select>
           </div>
         </div>
         <div v-if="form.status === 'aberto'" class="form-group">
           <label>Encerrar inscricoes em</label>
-          <input v-model="form.inscricoesEncerramEm" type="datetime-local" required />
+          <input v-model="form.inscricoesEncerramEm" type="datetime-local" :min="dataHoraMinima" required />
         </div>
         <div class="form-group">
           <label>Palestrantes</label>
-          <select v-model="form.palestrantes" multiple>
-            <option v-for="palestrante in palestrantes" :key="palestrante._id" :value="palestrante._id">
-              {{ palestrante.nome }}
-            </option>
-          </select>
+          <div v-if="palestrantes.length" class="checkbox-lista">
+            <label v-for="palestrante in palestrantes" :key="palestrante._id" class="checkbox-opcao">
+              <input v-model="form.palestrantes" type="checkbox" :value="palestrante._id" />
+              <span>
+                <strong>{{ palestrante.nome }}</strong>
+                <small>{{ descricaoPalestrante(palestrante) }}</small>
+              </span>
+            </label>
+          </div>
+          <p v-else class="texto-suave texto-formulario">
+            Nenhum palestrante cadastrado. O evento pode ser salvo sem palestrantes.
+          </p>
+          <p v-if="palestrantes.length && form.palestrantes.length === 0" class="texto-suave texto-formulario">
+            Nenhum palestrante selecionado.
+          </p>
         </div>
         <label class="checkbox-linha">
           <input v-model="form.permiteCertificado" type="checkbox" />
@@ -168,6 +200,12 @@
             <span class="icone">Local</span>
             <span>{{ evento.local }}</span>
           </div>
+          <div v-if="evento.previsaoTempoAtiva" class="evento-info evento-info-clima">
+            <span class="icone">Chuva</span>
+            <span :class="['previsao-badge', riscoPrevisaoClasse(previsaoCard(evento))]">
+              {{ resumoPrevisaoCard(evento) }}
+            </span>
+          </div>
           <div class="evento-info">
             <span class="icone">Palestrantes</span>
             <span>{{ nomesPalestrantes(evento) }}</span>
@@ -243,6 +281,7 @@ import {
   toDateInputValue,
   toDateTimeInputValue
 } from '@/utils/formatters'
+import { mensagemEmissaoCertificados } from '@/utils/certificados'
 
 const formInicial = () => ({
   titulo: '',
@@ -251,6 +290,9 @@ const formInicial = () => ({
   horarioInicio: '',
   horarioFim: '',
   local: '',
+  cidade: '',
+  uf: '',
+  previsaoTempoAtiva: false,
   cargaHoraria: 1,
   vagas: 1,
   inscricoesEncerramEm: '',
@@ -259,6 +301,26 @@ const formInicial = () => ({
   status: 'fechado',
   permiteCertificado: true
 })
+
+const toLocalInputDateTime = (date = new Date()) => {
+  const offset = date.getTimezoneOffset()
+  const localDate = new Date(date.getTime() - offset * 60000)
+  return localDate.toISOString().slice(0, 16)
+}
+
+const combineFormDateAndTime = (data, horario) => {
+  if (!data || !horario) return null
+  const [ano, mes, dia] = data.split('-').map(Number)
+  const [hora, minuto] = horario.split(':').map(Number)
+
+  if (![ano, mes, dia, hora, minuto].every(Number.isInteger)) return null
+  return new Date(ano, mes - 1, dia, hora, minuto, 0, 0)
+}
+
+const ufsBrasil = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+]
 
 export default {
   name: 'HomeView',
@@ -270,6 +332,7 @@ export default {
       eventos: [],
       categorias: [],
       palestrantes: [],
+      previsoesChuva: {},
       form: formInicial(),
       editandoId: null,
       mostrandoForm: false,
@@ -289,6 +352,9 @@ export default {
     }
   },
   computed: {
+    ufs() {
+      return ufsBrasil
+    },
     usuario() {
       return authStorage.getUser()
     },
@@ -314,6 +380,24 @@ export default {
           (!this.filtros.data || dataEvento === this.filtros.data)
         )
       })
+    },
+    dataMinima() {
+      return toLocalInputDateTime().slice(0, 10)
+    },
+    dataHoraMinima() {
+      return toLocalInputDateTime()
+    },
+    opcoesStatusFormulario() {
+      const opcoes = [
+        { valor: 'fechado', rotulo: 'Fechadas' },
+        { valor: 'aberto', rotulo: 'Abertas' }
+      ]
+
+      if (this.editandoId) {
+        opcoes.push({ valor: 'cancelado', rotulo: 'Cancelado' })
+      }
+
+      return opcoes
     }
   },
   watch: {
@@ -334,6 +418,7 @@ export default {
     async carregarDados() {
       this.carregando = true
       this.erro = null
+      this.previsoesChuva = {}
 
       try {
         const [eventos, categorias, palestrantes] = await Promise.all([
@@ -344,11 +429,33 @@ export default {
         this.eventos = eventos
         this.categorias = categorias
         this.palestrantes = palestrantes
+        this.carregarPrevisoesChuva()
       } catch (error) {
         this.erro = error.message || 'Nao foi possivel conectar ao servidor.'
       } finally {
         this.carregando = false
       }
+    },
+    async carregarPrevisoesChuva() {
+      const eventosComPrevisao = this.eventos.filter((evento) => evento.previsaoTempoAtiva)
+
+      await Promise.all(eventosComPrevisao.map(async (evento) => {
+        try {
+          this.previsoesChuva = {
+            ...this.previsoesChuva,
+            [evento._id]: await eventoService.previsaoChuva(evento._id)
+          }
+        } catch (error) {
+          this.previsoesChuva = {
+            ...this.previsoesChuva,
+            [evento._id]: {
+              previsaoDisponivel: false,
+              nivelRisco: 'INDISPONIVEL',
+              mensagem: 'Previsao de chuva indisponivel'
+            }
+          }
+        }
+      }))
     },
     abrirCadastro() {
       this.resetarForm()
@@ -361,6 +468,9 @@ export default {
         ...this.form,
         cargaHoraria: Number(this.form.cargaHoraria),
         vagas: Number(this.form.vagas),
+        cidade: this.form.previsaoTempoAtiva ? this.form.cidade : null,
+        uf: this.form.previsaoTempoAtiva ? this.form.uf : null,
+        palestrantes: Array.isArray(this.form.palestrantes) ? this.form.palestrantes : [],
         inscricoesEncerramEm: this.form.status === 'aberto' ? this.form.inscricoesEncerramEm : null
       }
     },
@@ -370,6 +480,20 @@ export default {
       this.sucesso = null
 
       try {
+        const inicio = combineFormDateAndTime(this.form.data, this.form.horarioInicio)
+        const agora = new Date()
+        agora.setSeconds(0, 0)
+
+        if (!inicio || inicio < agora) {
+          this.erroForm = 'Nao e permitido cadastrar ou editar eventos com data e hora retroativas.'
+          return
+        }
+
+        if (this.form.previsaoTempoAtiva && (!this.form.cidade || !this.form.uf)) {
+          this.erroForm = 'Informe cidade e UF para consultar a previsao do tempo.'
+          return
+        }
+
         if (this.editandoId) {
           await eventoService.atualizar(this.editandoId, this.payload())
           this.sucesso = 'Evento atualizado com sucesso.'
@@ -395,6 +519,9 @@ export default {
         horarioInicio: evento.horarioInicio,
         horarioFim: evento.horarioFim,
         local: evento.local,
+        cidade: evento.cidade || '',
+        uf: evento.uf || '',
+        previsaoTempoAtiva: Boolean(evento.previsaoTempoAtiva),
         cargaHoraria: evento.cargaHoraria,
         vagas: evento.vagas,
         inscricoesEncerramEm: toDateTimeInputValue(evento.inscricoesEncerramEm),
@@ -402,7 +529,7 @@ export default {
         palestrantes: (evento.palestrantes || []).map((palestrante) => (
           typeof palestrante === 'object' ? palestrante._id : palestrante
         )),
-        status: evento.status === 'encerrado' ? 'encerrado' : evento.status,
+        status: ['aberto', 'cancelado'].includes(evento.status) ? evento.status : 'fechado',
         permiteCertificado: evento.permiteCertificado
       }
       this.mostrandoForm = true
@@ -451,6 +578,9 @@ export default {
 
       return nomes.length ? nomes.join(', ') : 'A definir'
     },
+    descricaoPalestrante(palestrante) {
+      return [palestrante.areaAtuacao, palestrante.instituicao].filter(Boolean).join(' - ') || 'Sem detalhes adicionais'
+    },
     vagasDisponiveis(evento) {
       return Number.isFinite(Number(evento.vagasDisponiveis)) ? Number(evento.vagasDisponiveis) : Number(evento.vagas)
     },
@@ -462,6 +592,19 @@ export default {
         return formatarMotivoFechamento(evento.motivoFechamentoInscricao)
       }
       return formatarStatus(evento.status)
+    },
+    previsaoCard(evento) {
+      return this.previsoesChuva[evento._id] || null
+    },
+    resumoPrevisaoCard(evento) {
+      const previsao = this.previsaoCard(evento)
+      if (!previsao) return 'Consultando...'
+      if (!previsao.previsaoDisponivel) return 'Previsao indisponivel'
+      return `${previsao.probabilidadeChuvaHorario}% no horario`
+    },
+    riscoPrevisaoClasse(previsao) {
+      const risco = previsao?.nivelRisco || 'INDISPONIVEL'
+      return `previsao-${risco.toLowerCase()}`
     },
     organizadorId(evento) {
       return typeof evento.organizadorId === 'object' ? evento.organizadorId._id : evento.organizadorId
@@ -478,7 +621,7 @@ export default {
 
       try {
         const resultado = await certificadoService.emitirPorEvento(evento._id)
-        this.sucesso = `${resultado.emitidos} certificado(s) emitido(s). ${resultado.existentes} ja existiam.`
+        this.sucesso = mensagemEmissaoCertificados(resultado)
         await this.carregarDados()
       } catch (error) {
         this.erro = error.message || 'Erro ao emitir certificados.'

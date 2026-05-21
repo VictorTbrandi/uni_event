@@ -1,6 +1,31 @@
-export const formatarData = (data?: string | Date | null) => {
+const getCalendarDateParts = (data?: string | Date | null) => {
   if (!data) return ''
-  return new Date(data).toLocaleDateString('pt-BR', {
+
+  const stringDate = String(data)
+  const dateOnlyMatch = stringDate.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (dateOnlyMatch) {
+    return {
+      ano: dateOnlyMatch[1],
+      mes: dateOnlyMatch[2],
+      dia: dateOnlyMatch[3]
+    }
+  }
+
+  const parsed = new Date(data)
+  if (Number.isNaN(parsed.getTime())) return ''
+
+  return {
+    ano: String(parsed.getUTCFullYear()).padStart(4, '0'),
+    mes: String(parsed.getUTCMonth() + 1).padStart(2, '0'),
+    dia: String(parsed.getUTCDate()).padStart(2, '0')
+  }
+}
+
+export const formatarData = (data?: string | Date | null) => {
+  const parts = getCalendarDateParts(data)
+  if (!parts) return ''
+
+  return new Date(Number(parts.ano), Number(parts.mes) - 1, Number(parts.dia)).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'long',
     year: 'numeric'
@@ -8,8 +33,9 @@ export const formatarData = (data?: string | Date | null) => {
 }
 
 export const formatarDataCurta = (data?: string | Date | null) => {
-  if (!data) return ''
-  return new Date(data).toLocaleDateString('pt-BR')
+  const parts = getCalendarDateParts(data)
+  if (!parts) return ''
+  return `${parts.dia}/${parts.mes}/${parts.ano}`
 }
 
 export const formatarDataHora = (data?: string | Date | null) => {
@@ -24,11 +50,9 @@ export const formatarDataHora = (data?: string | Date | null) => {
 }
 
 export const toDateInputValue = (data?: string | Date | null) => {
-  if (!data) return ''
-  const parsed = new Date(data)
-  const offset = parsed.getTimezoneOffset()
-  const localDate = new Date(parsed.getTime() - offset * 60000)
-  return localDate.toISOString().slice(0, 10)
+  const parts = getCalendarDateParts(data)
+  if (!parts) return ''
+  return `${parts.ano}-${parts.mes}-${parts.dia}`
 }
 
 export const toDateTimeInputValue = (data?: string | Date | null) => {

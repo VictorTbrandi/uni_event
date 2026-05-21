@@ -14,10 +14,15 @@ const allowedOrigins = [
   'http://localhost:8081'
 ].filter(Boolean);
 
+const isLocalDevelopmentOrigin = (origin) => {
+  if (process.env.NODE_ENV === 'production') return false;
+  return /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+};
+
 app.use(helmet());
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || isLocalDevelopmentOrigin(origin)) {
       return callback(null, true);
     }
 

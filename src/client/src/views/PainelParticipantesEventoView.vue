@@ -55,6 +55,7 @@
 import { authStorage } from '@/services/api'
 import { certificadoService } from '@/services/certificadoService'
 import { eventoService } from '@/services/eventoService'
+import { mensagemEmissaoCertificados } from '@/utils/certificados'
 import { formatarStatus } from '@/utils/formatters'
 
 export default {
@@ -109,7 +110,7 @@ export default {
 
       try {
         const resultado = await certificadoService.emitirPorEvento(this.evento._id)
-        this.mensagem = `${resultado.emitidos} certificado(s) emitido(s). ${resultado.existentes} ja existiam.`
+        this.mensagem = mensagemEmissaoCertificados(resultado)
         this.mensagemTipo = 'sucesso'
         await this.carregarDados()
       } catch (error) {

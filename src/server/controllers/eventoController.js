@@ -12,7 +12,7 @@ class EventoController {
   }
 
   async findAll(req, res) {
-    const data = await eventoService.findAll();
+    const data = await eventoService.findAll(req.user);
     return ApiResponse.success(res, {
       message: 'Eventos listados com sucesso.',
       data
@@ -20,9 +20,17 @@ class EventoController {
   }
 
   async findById(req, res) {
-    const data = await eventoService.findById(req.params.id);
+    const data = await eventoService.findById(req.params.id, req.user);
     return ApiResponse.success(res, {
       message: 'Evento encontrado com sucesso.',
+      data
+    });
+  }
+
+  async previsaoChuva(req, res) {
+    const data = await eventoService.getRainForecast(req.params.id, req.user);
+    return ApiResponse.success(res, {
+      message: 'Previsao de chuva consultada com sucesso.',
       data
     });
   }

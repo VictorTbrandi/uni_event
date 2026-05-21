@@ -35,6 +35,32 @@ const eventoSchema = new mongoose.Schema(
       trim: true,
       maxlength: 150
     },
+    cidade: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null
+    },
+    uf: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      minlength: 2,
+      maxlength: 2,
+      default: null
+    },
+    latitude: {
+      type: Number,
+      default: null
+    },
+    longitude: {
+      type: Number,
+      default: null
+    },
+    previsaoTempoAtiva: {
+      type: Boolean,
+      default: false
+    },
     cargaHoraria: {
       type: Number,
       required: true,

@@ -29,7 +29,7 @@
             <span>Codigo de validacao</span>
             <strong>{{ certificado.codigoValidacao }}</strong>
           </div>
-          <router-link :to="`/meus-certificados/${certificado._id}`" class="btn-detalhe">
+          <router-link :to="`/meus-certificados/${certificado._id}`" class="btn-certificado">
             Ver certificado
           </router-link>
         </div>

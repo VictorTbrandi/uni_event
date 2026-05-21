@@ -98,6 +98,7 @@ class CertificadoService {
       totalInscritos: inscricoes.length,
       emitidos,
       existentes,
+      pendentes: Math.max(inscricoes.length - emitidos - existentes, 0),
       certificados
     };
   }

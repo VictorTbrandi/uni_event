@@ -16,6 +16,7 @@ export interface EmissaoEventoResultado {
   totalInscritos: number
   emitidos: number
   existentes: number
+  pendentes?: number
   certificados: Certificado[]
 }
 

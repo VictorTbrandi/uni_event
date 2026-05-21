@@ -1,4 +1,4 @@
-import { api, User } from './api'
+import { api, authStorage, User } from './api'
 
 export interface Categoria {
   _id: string
@@ -26,6 +26,11 @@ export interface Evento {
   horarioInicio: string
   horarioFim: string
   local: string
+  cidade?: string | null
+  uf?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  previsaoTempoAtiva?: boolean
   cargaHoraria: number
   vagas: number
   inscricoesEncerramEm?: string | null
@@ -50,6 +55,9 @@ export interface EventoPayload {
   horarioInicio: string
   horarioFim: string
   local: string
+  cidade: string | null
+  uf: string | null
+  previsaoTempoAtiva: boolean
   cargaHoraria: number
   vagas: number
   inscricoesEncerramEm: string | null
@@ -59,12 +67,39 @@ export interface EventoPayload {
   permiteCertificado: boolean
 }
 
+export interface PrevisaoChuvaEvento {
+  eventoId: string
+  tituloEvento: string
+  dataEvento: string
+  horarioInicio: string
+  cidade?: string | null
+  uf?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  previsaoDisponivel: boolean
+  probabilidadeChuvaHorario: number | null
+  probabilidadeChuvaDia: number | null
+  chuvaHorarioMm: number | null
+  chuvaDiaMm: number | null
+  horasComChuvaDia: number | null
+  nivelRisco: 'BAIXO_RISCO' | 'RISCO_MODERADO' | 'ALTO_RISCO' | 'INDISPONIVEL'
+  mensagem: string
+}
+
+const deveListarComoGestor = () => {
+  const user = authStorage.getUser()
+  return user?.tipoPerfil === 'admin' || user?.tipoPerfil === 'organizador'
+}
+
 export const eventoService = {
   listar() {
-    return api.get<Evento[]>('/eventos', { auth: false })
+    return api.get<Evento[]>('/eventos', { auth: deveListarComoGestor() })
   },
   buscarPorId(id: string) {
-    return api.get<Evento>(`/eventos/${id}`, { auth: false })
+    return api.get<Evento>(`/eventos/${id}`, { auth: authStorage.isAuthenticated() })
+  },
+  previsaoChuva(id: string) {
+    return api.get<PrevisaoChuvaEvento>(`/eventos/${id}/previsao-chuva`, { auth: authStorage.isAuthenticated() })
   },
   criar(payload: EventoPayload) {
     return api.post<Evento>('/eventos', payload)
