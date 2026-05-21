@@ -45,6 +45,10 @@ const eventoSchema = new mongoose.Schema(
       required: true,
       min: 1
     },
+    inscricoesEncerramEm: {
+      type: Date,
+      default: null
+    },
     categoriaId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Categoria',
@@ -63,8 +67,8 @@ const eventoSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['rascunho', 'aberto', 'encerrado', 'cancelado'],
-      default: 'rascunho'
+      enum: ['aberto', 'fechado', 'encerrado', 'cancelado'],
+      default: 'fechado'
     },
     imagemUrl: {
       type: String,

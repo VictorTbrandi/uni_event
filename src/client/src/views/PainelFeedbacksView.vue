@@ -73,7 +73,7 @@ export default {
   },
   methods: {
     async carregarDados() {
-      const id = this.$route.params.eventoId
+      const id = this.$route.params.id
       try {
         const [evento, feedbacks] = await Promise.all([
           eventoService.buscarPorId(id),
@@ -92,7 +92,7 @@ export default {
       this.erroAcao = null
 
       try {
-        this.resumo = await iaService.resumirFeedbacks(this.$route.params.eventoId)
+        this.resumo = await iaService.resumirFeedbacks(this.$route.params.id)
       } catch (error) {
         this.erroAcao = error.message || 'Erro ao resumir feedbacks.'
       } finally {
@@ -104,7 +104,7 @@ export default {
       this.erroAcao = null
 
       try {
-        this.satisfacao = await iaService.classificarSatisfacao(this.$route.params.eventoId)
+        this.satisfacao = await iaService.classificarSatisfacao(this.$route.params.id)
       } catch (error) {
         this.erroAcao = error.message || 'Erro ao classificar satisfação.'
       } finally {

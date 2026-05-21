@@ -4,59 +4,54 @@
     <div v-else-if="erro" class="estado-erro">{{ erro }}</div>
 
     <div v-else-if="certificado">
-      <div class="page-header">
+      <div class="page-header page-header-acoes">
         <h1>Certificado</h1>
+        <button class="btn-secundario btn-header" type="button" @click="$router.back()">Voltar</button>
       </div>
 
-      <div class="detalhe-container">
-        <div class="detalhe-body">
-          <div class="linha-entre">
-            <div>
-              <h2>{{ evento.titulo }}</h2>
-              <p class="texto-suave">{{ formatarData(evento.data) }} · {{ evento.local }}</p>
-            </div>
+      <article class="certificado-documento">
+        <div class="certificado-documento-borda">
+          <div class="certificado-documento-topo">
+            <router-link to="/" class="navbar-brand certificado-logo">Uni<span>Event</span></router-link>
             <span :class="['status-tag', `status-${certificado.status}`]">{{ formatarStatus(certificado.status) }}</span>
           </div>
 
-          <div class="detalhe-grid detalhe-grid-topo">
-            <div class="detalhe-info-bloco">
-              <span class="icone">Aluno</span>
-              <div>
-                <strong>Participante</strong>
-                <p>{{ usuario.nome }}</p>
-              </div>
+          <div class="certificado-documento-corpo">
+            <span class="certificado-label">Certificamos que</span>
+            <h2>{{ usuario.nome }}</h2>
+            <p>
+              participou do evento <strong>{{ evento.titulo }}</strong>, realizado em
+              {{ formatarData(evento.data) }}, com carga horaria de {{ certificado.cargaHoraria }} horas.
+            </p>
+          </div>
+
+          <div class="certificado-documento-info">
+            <div>
+              <span>Local</span>
+              <strong>{{ evento.local }}</strong>
             </div>
-            <div class="detalhe-info-bloco">
-              <span class="icone">Carga</span>
-              <div>
-                <strong>Carga Horária</strong>
-                <p>{{ certificado.cargaHoraria }}h</p>
-              </div>
+            <div>
+              <span>Horario</span>
+              <strong>{{ evento.horarioInicio }} - {{ evento.horarioFim }}</strong>
             </div>
-            <div class="detalhe-info-bloco">
-              <span class="icone">Código</span>
-              <div>
-                <strong>Validação</strong>
-                <p>{{ certificado.codigoValidacao }}</p>
-              </div>
+            <div>
+              <span>Emissao</span>
+              <strong>{{ formatarData(certificado.dataEmissao) }}</strong>
             </div>
-            <div class="detalhe-info-bloco">
-              <span class="icone">Emissão</span>
-              <div>
-                <strong>Data de Emissão</strong>
-                <p>{{ formatarData(certificado.dataEmissao) }}</p>
-              </div>
+            <div>
+              <span>Validacao</span>
+              <strong>{{ certificado.codigoValidacao }}</strong>
             </div>
           </div>
 
-          <div class="detalhe-acoes">
+          <div class="certificado-documento-rodape">
+            <p>Use o codigo de validacao para conferir a autenticidade deste certificado.</p>
             <a v-if="certificado.urlArquivo" class="btn-detalhe" :href="certificado.urlArquivo" target="_blank" rel="noreferrer">
               Abrir arquivo
             </a>
-            <button class="btn-voltar" @click="$router.back()">Voltar</button>
           </div>
         </div>
-      </div>
+      </article>
     </div>
   </div>
 </template>

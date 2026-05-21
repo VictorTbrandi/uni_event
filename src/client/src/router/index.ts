@@ -17,6 +17,18 @@ const routes: Array<RouteRecordRaw> = [
     component: HomeView
   },
   {
+    path: '/eventos/:id/participantes',
+    name: 'evento-participantes',
+    component: () => import('../views/PainelParticipantesEventoView.vue'),
+    meta: { requiresAuth: true, perfis: ['organizador', 'admin'] }
+  },
+  {
+    path: '/eventos/:id/feedbacks',
+    name: 'evento-feedbacks',
+    component: () => import('../views/PainelFeedbacksView.vue'),
+    meta: { requiresAuth: true, perfis: ['organizador', 'admin'] }
+  },
+  {
     path: '/eventos/:id',
     name: 'evento-detalhe',
     component: () => import('../views/EventoDetalheView.vue')
@@ -86,40 +98,30 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, perfis: ['participante', 'organizador', 'admin'] }
   },
   {
-    path: '/painel/eventos',
-    name: 'painel-eventos',
-    component: () => import('../views/PainelEventosView.vue'),
-    meta: { requiresAuth: true, perfis: ['organizador', 'admin'] }
-  },
-  {
-    path: '/painel/eventos/:id/participantes',
-    name: 'painel-evento-participantes',
-    component: () => import('../views/PainelParticipantesEventoView.vue'),
-    meta: { requiresAuth: true, perfis: ['organizador', 'admin'] }
-  },
-  {
-    path: '/painel/categorias',
-    name: 'painel-categorias',
-    component: () => import('../views/PainelCategoriasView.vue'),
-    meta: { requiresAuth: true, perfis: ['organizador', 'admin'] }
-  },
-  {
-    path: '/painel/palestrantes',
-    name: 'painel-palestrantes',
-    component: () => import('../views/PainelPalestrantesView.vue'),
-    meta: { requiresAuth: true, perfis: ['organizador', 'admin'] }
-  },
-  {
-    path: '/painel/feedbacks/:eventoId',
-    name: 'painel-feedbacks',
-    component: () => import('../views/PainelFeedbacksView.vue'),
-    meta: { requiresAuth: true, perfis: ['organizador', 'admin'] }
-  },
-  {
     path: '/admin/usuarios',
     name: 'admin-usuarios',
     component: () => import('../views/AdminUsuariosView.vue'),
     meta: { requiresAuth: true, perfis: ['admin'] }
+  },
+  {
+    path: '/painel/eventos',
+    redirect: { name: 'home' }
+  },
+  {
+    path: '/painel/categorias',
+    redirect: { name: 'categorias' }
+  },
+  {
+    path: '/painel/palestrantes',
+    redirect: { name: 'palestrantes' }
+  },
+  {
+    path: '/painel/eventos/:id/participantes',
+    redirect: (to) => ({ name: 'evento-participantes', params: { id: String(to.params.id) } })
+  },
+  {
+    path: '/painel/feedbacks/:eventoId',
+    redirect: (to) => ({ name: 'evento-feedbacks', params: { id: String(to.params.eventoId) } })
   },
   {
     path: '/:pathMatch(.*)*',

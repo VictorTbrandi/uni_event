@@ -1,7 +1,15 @@
 <template>
   <div>
     <div class="page-header page-header-acoes">
-      <h1>Proximos Eventos</h1>
+      <div class="page-header-titulo">
+        <div class="linha-titulo-role">
+          <h1>Proximos Eventos</h1>
+          <span v-if="podeGerenciar" class="role-pill">Modo gestor</span>
+        </div>
+        <p v-if="podeGerenciar" class="page-subtitle">
+          Cadastre, edite e acompanhe eventos nesta mesma tela.
+        </p>
+      </div>
       <button v-if="podeGerenciar" type="button" class="btn-submit btn-header" @click="abrirCadastro">
         Cadastrar evento
       </button>
@@ -63,14 +71,18 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Status</label>
+            <label>Inscricoes</label>
             <select v-model="form.status">
-              <option value="rascunho">Rascunho</option>
-              <option value="aberto">Aberto</option>
-              <option value="encerrado">Encerrado</option>
+              <option value="fechado">Fechadas</option>
+              <option value="aberto">Abertas</option>
+              <option value="encerrado" disabled>Encerrado automaticamente</option>
               <option value="cancelado">Cancelado</option>
             </select>
           </div>
+        </div>
+        <div v-if="form.status === 'aberto'" class="form-group">
+          <label>Encerrar inscricoes em</label>
+          <input v-model="form.inscricoesEncerramEm" type="datetime-local" required />
         </div>
         <div class="form-group">
           <label>Palestrantes</label>
@@ -94,6 +106,8 @@
       </form>
     </section>
 
+    <div v-if="sucesso && !mostrandoForm" class="estado-sucesso">{{ sucesso }}</div>
+
     <section class="filtros-barra">
       <div class="form-group">
         <label>Buscar</label>
@@ -113,7 +127,7 @@
         <select v-model="filtros.status">
           <option value="">Todos</option>
           <option value="aberto">Aberto</option>
-          <option value="rascunho">Rascunho</option>
+          <option value="fechado">Fechado</option>
           <option value="encerrado">Encerrado</option>
           <option value="cancelado">Cancelado</option>
         </select>
@@ -137,7 +151,7 @@
         <div class="evento-card-body">
           <div class="linha-entre">
             <span class="tag">{{ nomeCategoria(evento) }}</span>
-            <span :class="['status-tag', `status-${evento.status}`]">{{ formatarStatus(evento.status) }}</span>
+            <span :class="['status-tag', `status-${evento.status}`]">{{ statusEvento(evento) }}</span>
           </div>
 
           <h3>{{ evento.titulo }}</h3>
@@ -158,18 +172,45 @@
             <span class="icone">Palestrantes</span>
             <span>{{ nomesPalestrantes(evento) }}</span>
           </div>
+          <div v-if="evento.inscricoesEncerramEm" class="evento-info">
+            <span class="icone">Inscricoes</span>
+            <span>ate {{ formatarDataHora(evento.inscricoesEncerramEm) }}</span>
+          </div>
 
-          <p class="evento-vagas">{{ evento.vagas }} vagas totais</p>
+          <p :class="['evento-vagas', { esgotado: vagasDisponiveis(evento) === 0 }]">
+            {{ vagasDisponiveis(evento) }} de {{ evento.vagas }} vagas disponiveis
+          </p>
 
           <div class="card-acoes">
-            <button class="btn-inscrever" :disabled="evento.status !== 'aberto'" @click="irParaEvento(evento._id)">
-              {{ evento.status === 'aberto' ? 'Inscrever-se' : 'Indisponivel' }}
+            <button class="btn-inscrever" :disabled="!inscricaoDisponivel(evento)" @click="irParaEvento(evento._id)">
+              {{ inscricaoDisponivel(evento) ? 'Inscrever-se' : 'Inscricoes fechadas' }}
             </button>
             <router-link :to="`/eventos/${evento._id}`" class="btn-detalhe">Ver detalhes</router-link>
           </div>
 
-          <div v-if="podeGerenciar" class="card-acoes">
+          <div v-if="podeGerenciar" class="card-acoes card-acoes-admin">
             <button type="button" class="btn-mini" @click="editar(evento)">Editar</button>
+            <router-link
+              class="btn-mini-link"
+              :to="{ name: 'evento-participantes', params: { id: evento._id } }"
+            >
+              Participantes
+            </router-link>
+            <router-link
+              class="btn-mini-link"
+              :to="{ name: 'evento-feedbacks', params: { id: evento._id } }"
+            >
+              Feedbacks
+            </router-link>
+            <button
+              v-if="podeEmitirCertificados(evento)"
+              type="button"
+              class="btn-mini"
+              :disabled="emitindoCertificadosId === evento._id"
+              @click="emitirCertificados(evento)"
+            >
+              {{ emitindoCertificadosId === evento._id ? 'Emitindo...' : 'Emitir certificados' }}
+            </button>
             <button type="button" class="btn-mini btn-mini-perigo" @click="pedirExclusao(evento)">Excluir</button>
           </div>
         </div>
@@ -191,9 +232,17 @@
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { authStorage } from '@/services/api'
 import { categoriaService } from '@/services/categoriaService'
+import { certificadoService } from '@/services/certificadoService'
 import { eventoService } from '@/services/eventoService'
 import { palestranteService } from '@/services/palestranteService'
-import { formatarData, formatarStatus, toDateInputValue } from '@/utils/formatters'
+import {
+  formatarData,
+  formatarDataHora,
+  formatarMotivoFechamento,
+  formatarStatus,
+  toDateInputValue,
+  toDateTimeInputValue
+} from '@/utils/formatters'
 
 const formInicial = () => ({
   titulo: '',
@@ -204,9 +253,10 @@ const formInicial = () => ({
   local: '',
   cargaHoraria: 1,
   vagas: 1,
+  inscricoesEncerramEm: '',
   categoriaId: '',
   palestrantes: [],
-  status: 'rascunho',
+  status: 'fechado',
   permiteCertificado: true
 })
 
@@ -234,13 +284,16 @@ export default {
       erro: null,
       erroForm: null,
       sucesso: null,
-      eventoParaExcluir: null
+      eventoParaExcluir: null,
+      emitindoCertificadosId: null
     }
   },
   computed: {
+    usuario() {
+      return authStorage.getUser()
+    },
     podeGerenciar() {
-      const usuario = authStorage.getUser()
-      return ['admin', 'organizador'].includes(usuario?.tipoPerfil)
+      return ['admin', 'organizador'].includes(this.usuario?.tipoPerfil)
     },
     mensagemExclusao() {
       const titulo = this.eventoParaExcluir?.titulo || 'este evento'
@@ -276,6 +329,7 @@ export default {
   },
   methods: {
     formatarData,
+    formatarDataHora,
     formatarStatus,
     async carregarDados() {
       this.carregando = true
@@ -306,7 +360,8 @@ export default {
       return {
         ...this.form,
         cargaHoraria: Number(this.form.cargaHoraria),
-        vagas: Number(this.form.vagas)
+        vagas: Number(this.form.vagas),
+        inscricoesEncerramEm: this.form.status === 'aberto' ? this.form.inscricoesEncerramEm : null
       }
     },
     async salvar() {
@@ -342,11 +397,12 @@ export default {
         local: evento.local,
         cargaHoraria: evento.cargaHoraria,
         vagas: evento.vagas,
+        inscricoesEncerramEm: toDateTimeInputValue(evento.inscricoesEncerramEm),
         categoriaId: typeof evento.categoriaId === 'object' ? evento.categoriaId._id : evento.categoriaId,
         palestrantes: (evento.palestrantes || []).map((palestrante) => (
           typeof palestrante === 'object' ? palestrante._id : palestrante
         )),
-        status: evento.status,
+        status: evento.status === 'encerrado' ? 'encerrado' : evento.status,
         permiteCertificado: evento.permiteCertificado
       }
       this.mostrandoForm = true
@@ -394,6 +450,41 @@ export default {
       )).filter(Boolean)
 
       return nomes.length ? nomes.join(', ') : 'A definir'
+    },
+    vagasDisponiveis(evento) {
+      return Number.isFinite(Number(evento.vagasDisponiveis)) ? Number(evento.vagasDisponiveis) : Number(evento.vagas)
+    },
+    inscricaoDisponivel(evento) {
+      return evento.status === 'aberto' && this.vagasDisponiveis(evento) > 0
+    },
+    statusEvento(evento) {
+      if (evento.status === 'fechado' && evento.motivoFechamentoInscricao) {
+        return formatarMotivoFechamento(evento.motivoFechamentoInscricao)
+      }
+      return formatarStatus(evento.status)
+    },
+    organizadorId(evento) {
+      return typeof evento.organizadorId === 'object' ? evento.organizadorId._id : evento.organizadorId
+    },
+    podeEmitirCertificados(evento) {
+      if (!this.podeGerenciar || !evento.permiteCertificado || evento.status !== 'encerrado') return false
+      if (this.usuario?.tipoPerfil === 'admin') return true
+      return String(this.organizadorId(evento)) === String(this.usuario?._id)
+    },
+    async emitirCertificados(evento) {
+      this.emitindoCertificadosId = evento._id
+      this.erro = null
+      this.sucesso = null
+
+      try {
+        const resultado = await certificadoService.emitirPorEvento(evento._id)
+        this.sucesso = `${resultado.emitidos} certificado(s) emitido(s). ${resultado.existentes} ja existiam.`
+        await this.carregarDados()
+      } catch (error) {
+        this.erro = error.message || 'Erro ao emitir certificados.'
+      } finally {
+        this.emitindoCertificadosId = null
+      }
     },
     limparFiltros() {
       this.filtros = { busca: '', categoriaId: '', status: '', data: '' }

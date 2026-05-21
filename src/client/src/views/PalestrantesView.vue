@@ -1,7 +1,15 @@
 <template>
   <div>
     <div class="page-header page-header-acoes">
-      <h1>Palestrantes</h1>
+      <div class="page-header-titulo">
+        <div class="linha-titulo-role">
+          <h1>Palestrantes</h1>
+          <span v-if="podeGerenciar" class="role-pill">Modo gestor</span>
+        </div>
+        <p v-if="podeGerenciar" class="page-subtitle">
+          Cadastre e edite palestrantes sem sair da listagem.
+        </p>
+      </div>
       <button v-if="podeGerenciar" type="button" class="btn-submit btn-header" @click="abrirCadastro">
         Cadastrar palestrante
       </button>

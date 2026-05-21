@@ -14,7 +14,7 @@
         <div class="detalhe-body">
           <div class="linha-entre detalhe-topo">
             <span class="tag">{{ nomeCategoria }}</span>
-            <span :class="['status-tag', `status-${evento.status}`]">{{ formatarStatus(evento.status) }}</span>
+            <span :class="['status-tag', `status-${evento.status}`]">{{ statusEvento }}</span>
           </div>
 
           <section class="detalhe-secao">
@@ -24,45 +24,45 @@
 
           <div class="detalhe-grid">
             <div class="detalhe-info-bloco">
-              <span class="icone">Data</span>
               <div>
                 <strong>Data</strong>
                 <p>{{ formatarData(evento.data) }}</p>
               </div>
             </div>
             <div class="detalhe-info-bloco">
-              <span class="icone">Hora</span>
               <div>
-                <strong>Horário</strong>
+                <strong>Horario</strong>
                 <p>{{ evento.horarioInicio }} - {{ evento.horarioFim }}</p>
               </div>
             </div>
             <div class="detalhe-info-bloco">
-              <span class="icone">Local</span>
               <div>
                 <strong>Local</strong>
                 <p>{{ evento.local }}</p>
               </div>
             </div>
             <div class="detalhe-info-bloco">
-              <span class="icone">Carga</span>
               <div>
-                <strong>Carga Horária</strong>
+                <strong>Carga horaria</strong>
                 <p>{{ evento.cargaHoraria }}h</p>
               </div>
             </div>
             <div class="detalhe-info-bloco">
-              <span class="icone">Cert.</span>
               <div>
                 <strong>Certificado</strong>
-                <p>{{ evento.permiteCertificado ? 'Sim' : 'Não' }}</p>
+                <p>{{ evento.permiteCertificado ? 'Sim' : 'Nao' }}</p>
               </div>
             </div>
             <div class="detalhe-info-bloco">
-              <span class="icone">Org.</span>
               <div>
                 <strong>Organizador</strong>
                 <p>{{ nomeOrganizador }}</p>
+              </div>
+            </div>
+            <div class="detalhe-info-bloco">
+              <div>
+                <strong>Inscricoes ate</strong>
+                <p>{{ evento.inscricoesEncerramEm ? formatarDataHora(evento.inscricoesEncerramEm) : 'Fechadas' }}</p>
               </div>
             </div>
           </div>
@@ -78,9 +78,11 @@
           </section>
 
           <div class="detalhe-rodape">
-            <p class="evento-vagas">{{ evento.vagas }} vagas totais</p>
+            <p :class="['evento-vagas', { esgotado: vagasDisponiveis === 0 }]">
+              {{ vagasDisponiveis }} de {{ evento.vagas }} vagas disponiveis
+            </p>
             <div class="detalhe-acoes">
-              <button class="btn-inscrever" :disabled="evento.status !== 'aberto' || inscrevendo" @click="inscrever">
+              <button class="btn-inscrever" :disabled="!inscricaoDisponivel || inscrevendo" @click="inscrever">
                 {{ textoBotaoInscricao }}
               </button>
               <button class="btn-voltar" @click="$router.back()">Voltar</button>
@@ -97,7 +99,12 @@
 import { authStorage } from '@/services/api'
 import { eventoService } from '@/services/eventoService'
 import { inscricaoService } from '@/services/inscricaoService'
-import { formatarData, formatarStatus } from '@/utils/formatters'
+import {
+  formatarData,
+  formatarDataHora,
+  formatarMotivoFechamento,
+  formatarStatus
+} from '@/utils/formatters'
 
 export default {
   name: 'EventoDetalheView',
@@ -112,9 +119,23 @@ export default {
     }
   },
   computed: {
+    vagasDisponiveis() {
+      return Number.isFinite(Number(this.evento?.vagasDisponiveis))
+        ? Number(this.evento.vagasDisponiveis)
+        : Number(this.evento?.vagas || 0)
+    },
+    inscricaoDisponivel() {
+      return this.evento?.status === 'aberto' && this.vagasDisponiveis > 0
+    },
     textoBotaoInscricao() {
       if (this.inscrevendo) return 'Inscrevendo...'
-      return this.evento?.status === 'aberto' ? 'Inscrever-se' : 'Inscrições indisponíveis'
+      return this.inscricaoDisponivel ? 'Inscrever-se' : 'Inscricoes indisponiveis'
+    },
+    statusEvento() {
+      if (this.evento?.status === 'fechado' && this.evento?.motivoFechamentoInscricao) {
+        return formatarMotivoFechamento(this.evento.motivoFechamentoInscricao)
+      }
+      return formatarStatus(this.evento?.status)
     },
     nomeCategoria() {
       return typeof this.evento?.categoriaId === 'object' ? this.evento.categoriaId.nome : 'Sem categoria'
@@ -131,6 +152,7 @@ export default {
   },
   methods: {
     formatarData,
+    formatarDataHora,
     formatarStatus,
     async carregarEvento() {
       try {
@@ -152,10 +174,11 @@ export default {
 
       try {
         await inscricaoService.inscrever(this.evento._id)
-        this.mensagem = 'Inscrição realizada com sucesso!'
+        this.mensagem = 'Inscricao realizada com sucesso!'
         this.mensagemTipo = 'sucesso'
+        await this.carregarEvento()
       } catch (error) {
-        this.mensagem = error.message || 'Erro ao realizar inscrição.'
+        this.mensagem = error.message || 'Erro ao realizar inscricao.'
         this.mensagemTipo = 'erro'
       } finally {
         this.inscrevendo = false

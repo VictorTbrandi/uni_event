@@ -11,6 +11,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.post('/emitir', authorize('admin', 'organizador'), emitirCertificadoValidator, validateRequest, asyncHandler(certificadoController.emitir.bind(certificadoController)));
+router.post('/eventos/:eventoId/emitir', authorize('admin', 'organizador'), asyncHandler(certificadoController.emitirPorEvento.bind(certificadoController)));
 router.get('/meus', authorize('participante', 'admin', 'organizador'), asyncHandler(certificadoController.getMine.bind(certificadoController)));
 router.get('/:id', authorize('participante', 'admin', 'organizador'), asyncHandler(certificadoController.findById.bind(certificadoController)));
 

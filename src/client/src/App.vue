@@ -1,7 +1,5 @@
 <template>
   <div id="app">
-
-    <!-- Layout de autenticação: sem navbar, mas mantém o wrapper -->
     <template v-if="isAuthPage">
       <div class="auth-page">
         <div class="auth-topbar">
@@ -15,14 +13,11 @@
       </div>
     </template>
 
-    <!-- Layout principal -->
     <template v-else>
       <nav class="navbar">
         <div class="navbar-inner">
-
           <router-link to="/" class="navbar-brand">Uni<span>Event</span></router-link>
 
-          <!-- Botão do menu + dropdown -->
           <div class="nav-menu-wrapper" @click.stop>
             <button class="nav-menu-btn" aria-label="Menu" @click="toggleMenu">
               <span></span>
@@ -31,9 +26,7 @@
             </button>
 
             <div class="nav-dropdown" :class="{ 'is-open': menuAberto }">
-
-              <!-- Navegação pública -->
-              <span class="nav-secao-label">Navegação</span>
+              <span class="nav-secao-label">{{ podeGerenciar ? 'Explorar e gerir' : 'Navegação' }}</span>
               <router-link to="/" @click="fecharTudo">Eventos</router-link>
               <router-link to="/palestrantes" @click="fecharTudo">Palestrantes</router-link>
               <router-link to="/categorias" @click="fecharTudo">Categorias</router-link>
@@ -41,29 +34,23 @@
 
               <div class="nav-dropdown-divider"></div>
 
-              <!-- Não logado -->
               <template v-if="!logado">
                 <router-link to="/login" @click="fecharTudo">Entrar</router-link>
                 <router-link to="/cadastro" class="nav-item-destaque" @click="fecharTudo">Cadastrar</router-link>
               </template>
 
-              <!-- Logado -->
               <template v-else>
+                <span class="nav-usuario-info">{{ nomeUsuario }} - {{ labelPerfil }}</span>
+                <span v-if="podeGerenciar" class="nav-role-hint">
+                  Ações de gestão aparecem nas telas principais.
+                </span>
 
-                <!-- Identificação -->
-                <span class="nav-usuario-info">{{ nomeUsuario }} · {{ labelPerfil }}</span>
-
-                <!-- Painel (organizador / admin) -->
-                <template v-if="podePainel">
+                <template v-if="podeAdmin">
                   <div class="nav-dropdown-divider"></div>
-                  <span class="nav-secao-label">Painel</span>
-                  <router-link to="/painel/eventos" @click="fecharTudo">Eventos</router-link>
-                  <router-link to="/painel/categorias" @click="fecharTudo">Categorias</router-link>
-                  <router-link to="/painel/palestrantes" @click="fecharTudo">Palestrantes</router-link>
-                  <router-link v-if="podeAdmin" to="/admin/usuarios" @click="fecharTudo">Usuários</router-link>
+                  <span class="nav-secao-label">Administração</span>
+                  <router-link to="/admin/usuarios" @click="fecharTudo">Usuários</router-link>
                 </template>
 
-                <!-- Minha conta -->
                 <div class="nav-dropdown-divider"></div>
                 <span class="nav-secao-label">Minha conta</span>
                 <router-link v-if="podeParticipante" to="/minhas-inscricoes" @click="fecharTudo">Inscrições</router-link>
@@ -72,11 +59,9 @@
 
                 <div class="nav-dropdown-divider"></div>
                 <a href="#" class="nav-sair" @click.prevent="sair">Sair</a>
-
               </template>
             </div>
           </div>
-
         </div>
       </nav>
 
@@ -86,7 +71,6 @@
         </div>
       </main>
     </template>
-
   </div>
 </template>
 
@@ -122,7 +106,7 @@ export default {
     podeParticipante() {
       return ['participante', 'admin'].includes(this.usuario?.tipoPerfil)
     },
-    podePainel() {
+    podeGerenciar() {
       return ['organizador', 'admin'].includes(this.usuario?.tipoPerfil)
     },
     podeAdmin() {

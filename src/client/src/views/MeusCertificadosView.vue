@@ -6,22 +6,32 @@
 
     <div v-if="carregando" class="estado-loading">Carregando certificados...</div>
     <div v-else-if="erro" class="estado-erro">{{ erro }}</div>
-    <div v-else-if="certificados.length === 0" class="estado-vazio">
-      Nenhum certificado emitido até o momento.
+    <div v-else-if="certificados.length === 0" class="estado-vazio certificado-vazio">
+      <h2>Nenhum certificado emitido ainda</h2>
+      <p>Quando um evento encerrado emitir certificados, eles aparecerao aqui para consulta.</p>
     </div>
 
-    <div v-else class="lista-vertical">
-      <article v-for="certificado in certificados" :key="certificado._id" class="painel-card">
-        <div class="linha-entre">
-          <div>
-            <h3>{{ evento(certificado).titulo }}</h3>
-            <p>{{ formatarData(evento(certificado).data) }} · {{ evento(certificado).local }}</p>
-            <p>{{ certificado.cargaHoraria }}h · Código {{ certificado.codigoValidacao }}</p>
-          </div>
+    <div v-else class="certificados-grid">
+      <article v-for="certificado in certificados" :key="certificado._id" class="certificado-card">
+        <div class="certificado-card-topo">
           <span :class="['status-tag', `status-${certificado.status}`]">{{ formatarStatus(certificado.status) }}</span>
+          <span class="certificado-carga">{{ certificado.cargaHoraria }}h</span>
         </div>
-        <div class="card-acoes card-acoes-linha">
-          <router-link :to="`/meus-certificados/${certificado._id}`" class="btn-detalhe">Ver certificado</router-link>
+
+        <div class="certificado-card-corpo">
+          <span class="certificado-label">Certificado UniEvent</span>
+          <h2>{{ evento(certificado).titulo }}</h2>
+          <p>{{ formatarData(evento(certificado).data) }} - {{ evento(certificado).local }}</p>
+        </div>
+
+        <div class="certificado-card-rodape">
+          <div>
+            <span>Codigo de validacao</span>
+            <strong>{{ certificado.codigoValidacao }}</strong>
+          </div>
+          <router-link :to="`/meus-certificados/${certificado._id}`" class="btn-detalhe">
+            Ver certificado
+          </router-link>
         </div>
       </article>
     </div>

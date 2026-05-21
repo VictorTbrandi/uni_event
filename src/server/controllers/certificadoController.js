@@ -11,6 +11,15 @@ class CertificadoController {
     });
   }
 
+  async emitirPorEvento(req, res) {
+    const data = await certificadoService.emitirPorEvento(req.params.eventoId, req.user);
+    return ApiResponse.success(res, {
+      statusCode: 201,
+      message: 'Certificados processados com sucesso.',
+      data
+    });
+  }
+
   async getMine(req, res) {
     const data = await certificadoService.getMine(req.user);
     return ApiResponse.success(res, {

@@ -28,10 +28,16 @@ export interface Evento {
   local: string
   cargaHoraria: number
   vagas: number
+  inscricoesEncerramEm?: string | null
   categoriaId: string | Categoria
   palestrantes: Array<string | Palestrante>
   organizadorId: string | Pick<User, '_id' | 'nome' | 'email'>
-  status: 'rascunho' | 'aberto' | 'encerrado' | 'cancelado'
+  status: 'aberto' | 'fechado' | 'encerrado' | 'cancelado'
+  motivoFechamentoInscricao?: string | null
+  inscritosCount?: number
+  vagasDisponiveis?: number
+  inicioEm?: string | null
+  fimEm?: string | null
   permiteCertificado: boolean
   imagemUrl?: string | null
   ativo?: boolean
@@ -46,6 +52,7 @@ export interface EventoPayload {
   local: string
   cargaHoraria: number
   vagas: number
+  inscricoesEncerramEm: string | null
   categoriaId: string
   palestrantes: string[]
   status: string
