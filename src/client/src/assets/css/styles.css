@@ -968,6 +968,18 @@ button:active {
     color: #465568;
 }
 
+.previsao-form-acoes {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.previsao-form-preview {
+    margin-top: 14px;
+}
+
 /* Categorias */
 .categorias-container {
     display: grid;

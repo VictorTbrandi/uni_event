@@ -41,6 +41,12 @@
                 <p>{{ evento.local }}</p>
               </div>
             </div>
+            <div v-if="cidadeEvento" class="detalhe-info-bloco">
+              <div>
+                <strong>Cidade</strong>
+                <p>{{ cidadeEvento }}</p>
+              </div>
+            </div>
             <div class="detalhe-info-bloco">
               <div>
                 <strong>Carga horaria</strong>
@@ -68,8 +74,8 @@
           </div>
 
           <section v-if="evento.previsaoTempoAtiva" class="detalhe-secao">
-            <h2>Previsao de chuva</h2>
-            <div v-if="carregandoPrevisao" class="texto-suave">Consultando previsao de chuva...</div>
+            <h2>Previsao do tempo</h2>
+            <div v-if="carregandoPrevisao" class="texto-suave">Consultando previsao do tempo...</div>
             <div v-else-if="previsaoChuva" class="previsao-detalhe">
               <div class="linha-entre">
                 <span :class="['previsao-badge', riscoPrevisaoClasse(previsaoChuva)]">
@@ -79,6 +85,26 @@
               </div>
               <p class="previsao-mensagem">{{ previsaoChuva.mensagem }}</p>
               <div v-if="previsaoChuva.previsaoDisponivel" class="previsao-grid">
+                <div>
+                  <strong>Condicao</strong>
+                  <span>{{ previsaoChuva.condicaoTempo || '-' }}</span>
+                </div>
+                <div>
+                  <strong>Temperatura no horario</strong>
+                  <span>{{ formatTemp(previsaoChuva.temperaturaHorario) }}</span>
+                </div>
+                <div>
+                  <strong>Sensacao termica</strong>
+                  <span>{{ formatTemp(previsaoChuva.sensacaoTermicaHorario) }}</span>
+                </div>
+                <div>
+                  <strong>Vento no horario</strong>
+                  <span>{{ formatWind(previsaoChuva.ventoHorarioKmH) }}</span>
+                </div>
+                <div>
+                  <strong>Minima / maxima</strong>
+                  <span>{{ formatTempRange(previsaoChuva.temperaturaMinDia, previsaoChuva.temperaturaMaxDia) }}</span>
+                </div>
                 <div>
                   <strong>Probabilidade no horario</strong>
                   <span>{{ formatPercent(previsaoChuva.probabilidadeChuvaHorario) }}</span>
@@ -98,6 +124,10 @@
                 <div>
                   <strong>Horas com chuva</strong>
                   <span>{{ previsaoChuva.horasComChuvaDia }}h</span>
+                </div>
+                <div>
+                  <strong>Vento maximo no dia</strong>
+                  <span>{{ formatWind(previsaoChuva.ventoMaxDiaKmH) }}</span>
                 </div>
               </div>
             </div>
@@ -181,6 +211,9 @@ export default {
     nomeOrganizador() {
       return typeof this.evento?.organizadorId === 'object' ? this.evento.organizadorId.nome : 'Organizador'
     },
+    cidadeEvento() {
+      return [this.evento?.cidade, this.evento?.uf].filter(Boolean).join('/')
+    },
     palestrantes() {
       return (this.evento?.palestrantes || []).filter((palestrante) => typeof palestrante === 'object')
     }
@@ -237,6 +270,18 @@ export default {
     },
     formatMm(value) {
       return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} mm` : '-'
+    },
+    formatTemp(value) {
+      return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} C` : '-'
+    },
+    formatTempRange(min, max) {
+      const minText = this.formatTemp(min)
+      const maxText = this.formatTemp(max)
+      if (minText === '-' && maxText === '-') return '-'
+      return `${minText} / ${maxText}`
+    },
+    formatWind(value) {
+      return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} km/h` : '-'
     },
     async inscrever() {
       if (!authStorage.isAuthenticated()) {

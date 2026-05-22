@@ -16,6 +16,15 @@ const unavailable = (evento, mensagem) => ({
   chuvaHorarioMm: null,
   chuvaDiaMm: null,
   horasComChuvaDia: null,
+  temperaturaHorario: null,
+  sensacaoTermicaHorario: null,
+  ventoHorarioKmH: null,
+  temperaturaMinDia: null,
+  temperaturaMaxDia: null,
+  ventoMaxDiaKmH: null,
+  codigoTempoHorario: null,
+  codigoTempoDia: null,
+  condicaoTempo: null,
   nivelRisco: 'INDISPONIVEL',
   mensagem
 });
@@ -80,6 +89,43 @@ const maxNumber = (...values) => {
   return numbers.length ? Math.max(...numbers) : null;
 };
 
+const weatherCodeDescriptions = {
+  0: 'Ceu limpo',
+  1: 'Predominantemente limpo',
+  2: 'Parcialmente nublado',
+  3: 'Nublado',
+  45: 'Neblina',
+  48: 'Neblina com geada',
+  51: 'Garoa leve',
+  53: 'Garoa moderada',
+  55: 'Garoa intensa',
+  56: 'Garoa congelante leve',
+  57: 'Garoa congelante intensa',
+  61: 'Chuva leve',
+  63: 'Chuva moderada',
+  65: 'Chuva forte',
+  66: 'Chuva congelante leve',
+  67: 'Chuva congelante forte',
+  71: 'Neve leve',
+  73: 'Neve moderada',
+  75: 'Neve forte',
+  77: 'Graos de neve',
+  80: 'Pancadas de chuva leves',
+  81: 'Pancadas de chuva moderadas',
+  82: 'Pancadas de chuva fortes',
+  85: 'Pancadas de neve leves',
+  86: 'Pancadas de neve fortes',
+  95: 'Temporal',
+  96: 'Temporal com granizo leve',
+  99: 'Temporal com granizo forte'
+};
+
+const describeWeatherCode = (code) => {
+  const parsed = Number(code);
+  if (!Number.isInteger(parsed)) return null;
+  return weatherCodeDescriptions[parsed] || 'Condicao nao identificada';
+};
+
 const classifyRisk = ({ hourProbability, hourRain, dayProbability, dayRain }) => {
   if (hourProbability >= 60 || hourRain >= 2 || dayProbability >= 70 || dayRain >= 10) {
     return {
@@ -104,11 +150,11 @@ const classifyRisk = ({ hourProbability, hourRain, dayProbability, dayRain }) =>
 class PrevisaoTempoService {
   async getPrevisaoChuva(evento, inscritosCount = 0) {
     if (!evento?.previsaoTempoAtiva) {
-      return unavailable(evento, 'Previsao de chuva indisponivel para este evento.');
+      return unavailable(evento, 'Previsao do tempo indisponivel para este evento.');
     }
 
     if (!Number.isFinite(Number(evento.latitude)) || !Number.isFinite(Number(evento.longitude))) {
-      return unavailable(evento, 'Localizacao nao configurada para previsao de chuva.');
+      return unavailable(evento, 'Localizacao nao configurada para previsao do tempo.');
     }
 
     const lifecycle = resolveEventoStatus(evento, inscritosCount);
@@ -119,14 +165,20 @@ class PrevisaoTempoService {
     const dataEvento = toDateString(evento.data);
     const targetHour = getRoundedEventHour(dataEvento, evento.horarioInicio);
     if (!targetHour) {
-      return unavailable(evento, 'Previsao de chuva indisponivel para este evento.');
+      return unavailable(evento, 'Previsao do tempo indisponivel para este evento.');
     }
 
     const url = new URL('https://api.open-meteo.com/v1/forecast');
     url.searchParams.set('latitude', String(evento.latitude));
     url.searchParams.set('longitude', String(evento.longitude));
-    url.searchParams.set('hourly', 'precipitation_probability,precipitation,rain,showers,weather_code');
-    url.searchParams.set('daily', 'precipitation_probability_max,precipitation_sum,rain_sum,showers_sum,precipitation_hours,weather_code');
+    url.searchParams.set(
+      'hourly',
+      'precipitation_probability,precipitation,rain,showers,weather_code,temperature_2m,apparent_temperature,wind_speed_10m'
+    );
+    url.searchParams.set(
+      'daily',
+      'precipitation_probability_max,precipitation_sum,rain_sum,showers_sum,precipitation_hours,weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max'
+    );
     url.searchParams.set('timezone', 'America/Sao_Paulo');
     url.searchParams.set('forecast_days', '16');
 
@@ -156,6 +208,8 @@ class PrevisaoTempoService {
       Number(data.daily.rain_sum?.[dailyIndex] || 0) + Number(data.daily.showers_sum?.[dailyIndex] || 0)
     ) ?? 0;
     const hoursWithRain = numberOrNull(data.daily.precipitation_hours?.[dailyIndex]) ?? 0;
+    const codigoTempoHorario = numberOrNull(data.hourly.weather_code?.[hourlyIndex]);
+    const codigoTempoDia = numberOrNull(data.daily.weather_code?.[dailyIndex]);
     const risk = classifyRisk({ hourProbability, hourRain, dayProbability, dayRain });
 
     return {
@@ -173,6 +227,15 @@ class PrevisaoTempoService {
       chuvaHorarioMm: hourRain,
       chuvaDiaMm: dayRain,
       horasComChuvaDia: hoursWithRain,
+      temperaturaHorario: numberOrNull(data.hourly.temperature_2m?.[hourlyIndex]),
+      sensacaoTermicaHorario: numberOrNull(data.hourly.apparent_temperature?.[hourlyIndex]),
+      ventoHorarioKmH: numberOrNull(data.hourly.wind_speed_10m?.[hourlyIndex]),
+      temperaturaMinDia: numberOrNull(data.daily.temperature_2m_min?.[dailyIndex]),
+      temperaturaMaxDia: numberOrNull(data.daily.temperature_2m_max?.[dailyIndex]),
+      ventoMaxDiaKmH: numberOrNull(data.daily.wind_speed_10m_max?.[dailyIndex]),
+      codigoTempoHorario,
+      codigoTempoDia,
+      condicaoTempo: describeWeatherCode(codigoTempoHorario ?? codigoTempoDia),
       ...risk
     };
   }

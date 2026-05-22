@@ -68,7 +68,7 @@ export interface EventoPayload {
 }
 
 export interface PrevisaoChuvaEvento {
-  eventoId: string
+  eventoId: string | null
   tituloEvento: string
   dataEvento: string
   horarioInicio: string
@@ -82,8 +82,26 @@ export interface PrevisaoChuvaEvento {
   chuvaHorarioMm: number | null
   chuvaDiaMm: number | null
   horasComChuvaDia: number | null
+  temperaturaHorario?: number | null
+  sensacaoTermicaHorario?: number | null
+  ventoHorarioKmH?: number | null
+  temperaturaMinDia?: number | null
+  temperaturaMaxDia?: number | null
+  ventoMaxDiaKmH?: number | null
+  codigoTempoHorario?: number | null
+  codigoTempoDia?: number | null
+  condicaoTempo?: string | null
   nivelRisco: 'BAIXO_RISCO' | 'RISCO_MODERADO' | 'ALTO_RISCO' | 'INDISPONIVEL'
   mensagem: string
+}
+
+export interface PrevisaoChuvaPreviewPayload {
+  titulo?: string
+  data: string
+  horarioInicio: string
+  horarioFim?: string
+  cidade: string
+  uf: string
 }
 
 const deveListarComoGestor = () => {
@@ -100,6 +118,9 @@ export const eventoService = {
   },
   previsaoChuva(id: string) {
     return api.get<PrevisaoChuvaEvento>(`/eventos/${id}/previsao-chuva`, { auth: authStorage.isAuthenticated() })
+  },
+  previsaoChuvaPreview(payload: PrevisaoChuvaPreviewPayload) {
+    return api.post<PrevisaoChuvaEvento>('/eventos/previsao-chuva/preview', payload)
   },
   criar(payload: EventoPayload) {
     return api.post<Evento>('/eventos', payload)

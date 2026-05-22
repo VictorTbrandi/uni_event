@@ -30,7 +30,15 @@ class EventoController {
   async previsaoChuva(req, res) {
     const data = await eventoService.getRainForecast(req.params.id, req.user);
     return ApiResponse.success(res, {
-      message: 'Previsao de chuva consultada com sucesso.',
+      message: 'Previsao do tempo consultada com sucesso.',
+      data
+    });
+  }
+
+  async previsaoChuvaPreview(req, res) {
+    const data = await eventoService.previewRainForecast(req.body, req.user);
+    return ApiResponse.success(res, {
+      message: 'Previa da previsao do tempo consultada com sucesso.',
       data
     });
   }

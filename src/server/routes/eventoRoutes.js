@@ -11,6 +11,7 @@ const feedbackController = require('../controllers/feedbackController');
 const router = express.Router();
 
 router.get('/', optionalAuthMiddleware, asyncHandler(eventoController.findAll.bind(eventoController)));
+router.post('/previsao-chuva/preview', authMiddleware, authorize('admin', 'organizador'), asyncHandler(eventoController.previsaoChuvaPreview.bind(eventoController)));
 router.get('/:id/previsao-chuva', optionalAuthMiddleware, asyncHandler(eventoController.previsaoChuva.bind(eventoController)));
 router.get('/:id', optionalAuthMiddleware, asyncHandler(eventoController.findById.bind(eventoController)));
 router.get('/:id/participantes', authMiddleware, authorize('admin', 'organizador'), asyncHandler(eventoController.getParticipants.bind(eventoController)));

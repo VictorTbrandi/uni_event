@@ -118,8 +118,6 @@ class EventoService {
 
   async applyWeatherLocation(sanitized) {
     if (!sanitized.previsaoTempoAtiva) {
-      sanitized.cidade = null;
-      sanitized.uf = null;
       sanitized.latitude = null;
       sanitized.longitude = null;
       return sanitized;
@@ -135,6 +133,38 @@ class EventoService {
     sanitized.latitude = location.latitude;
     sanitized.longitude = location.longitude;
     return sanitized;
+  }
+
+  async previewRainForecast(payload) {
+    const cidade = payload.cidade ? String(payload.cidade).trim() : null;
+    const uf = payload.uf ? String(payload.uf).trim().toUpperCase() : null;
+
+    if (!cidade || !uf) {
+      throw new ApiError(400, 'Informe cidade e UF para consultar a previsao do tempo.');
+    }
+
+    if (!payload.data || !payload.horarioInicio) {
+      throw new ApiError(400, 'Informe data e horario de inicio para consultar a previsao do tempo.');
+    }
+
+    const location = await openMeteoGeocodingService.buscarCoordenadas(cidade, uf);
+    const previewEvent = {
+      _id: null,
+      titulo: payload.titulo || 'Previa do evento',
+      data: payload.data,
+      horarioInicio: payload.horarioInicio,
+      horarioFim: payload.horarioFim || payload.horarioInicio,
+      status: 'aberto',
+      vagas: 1,
+      inscricoesEncerramEm: null,
+      previsaoTempoAtiva: true,
+      cidade: location.cidade,
+      uf: location.uf,
+      latitude: location.latitude,
+      longitude: location.longitude
+    };
+
+    return previsaoTempoService.getPrevisaoChuva(previewEvent, 0);
   }
 
   async create(payload, currentUser) {

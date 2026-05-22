@@ -51,11 +51,7 @@
           <input v-model="form.local" type="text" required />
         </div>
         <section class="subsecao-form">
-          <h3>Previsao do tempo</h3>
-          <label class="checkbox-linha">
-            <input v-model="form.previsaoTempoAtiva" type="checkbox" />
-            Consultar previsao de chuva neste evento
-          </label>
+          <h3>Localizacao e clima</h3>
           <div class="form-grid">
             <div class="form-group">
               <label>Cidade</label>
@@ -70,8 +66,50 @@
             </div>
           </div>
           <p class="texto-suave texto-formulario">
-            Esses dados serao usados apenas para consultar a previsao de chuva do evento.
+            Cidade e UF identificam melhor o evento na agenda. Se a consulta estiver ativa, tambem serao usadas para buscar o clima.
           </p>
+          <label class="checkbox-linha">
+            <input v-model="form.previsaoTempoAtiva" type="checkbox" />
+            Consultar previsao do tempo neste evento
+          </label>
+          <div v-if="form.previsaoTempoAtiva" class="previsao-form-acoes">
+            <button
+              type="button"
+              class="btn-secundario"
+              :disabled="carregandoPrevisaoFormulario"
+              @click="consultarPrevisaoFormulario"
+            >
+              {{ carregandoPrevisaoFormulario ? 'Consultando...' : 'Consultar previa do clima' }}
+            </button>
+            <span class="texto-suave">A previa nao salva o evento.</span>
+          </div>
+          <div v-if="previsaoFormulario" class="previsao-detalhe previsao-form-preview">
+            <div class="linha-entre">
+              <span :class="['previsao-badge', riscoPrevisaoClasse(previsaoFormulario)]">
+                {{ labelRisco(previsaoFormulario.nivelRisco) }}
+              </span>
+              <span class="texto-suave">{{ localidadePrevisao(previsaoFormulario) }}</span>
+            </div>
+            <p class="previsao-mensagem">{{ previsaoFormulario.mensagem }}</p>
+            <div v-if="previsaoFormulario.previsaoDisponivel" class="previsao-grid">
+              <div>
+                <strong>Condicao</strong>
+                <span>{{ previsaoFormulario.condicaoTempo || '-' }}</span>
+              </div>
+              <div>
+                <strong>Temperatura</strong>
+                <span>{{ formatTemp(previsaoFormulario.temperaturaHorario) }}</span>
+              </div>
+              <div>
+                <strong>Chuva no horario</strong>
+                <span>{{ formatPercent(previsaoFormulario.probabilidadeChuvaHorario) }}</span>
+              </div>
+              <div>
+                <strong>Vento</strong>
+                <span>{{ formatWind(previsaoFormulario.ventoHorarioKmH) }}</span>
+              </div>
+            </div>
+          </div>
         </section>
         <div class="form-grid">
           <div class="form-group">
@@ -143,7 +181,7 @@
     <section class="filtros-barra">
       <div class="form-group">
         <label>Buscar</label>
-        <input v-model="filtros.busca" type="search" placeholder="Titulo do evento" />
+        <input v-model="filtros.busca" type="search" placeholder="Titulo, local ou cidade" />
       </div>
       <div class="form-group">
         <label>Categoria</label>
@@ -200,8 +238,12 @@
             <span class="icone">Local</span>
             <span>{{ evento.local }}</span>
           </div>
+          <div v-if="cidadeEvento(evento)" class="evento-info">
+            <span class="icone">Cidade</span>
+            <span>{{ cidadeEvento(evento) }}</span>
+          </div>
           <div v-if="evento.previsaoTempoAtiva" class="evento-info evento-info-clima">
-            <span class="icone">Chuva</span>
+            <span class="icone">Clima</span>
             <span :class="['previsao-badge', riscoPrevisaoClasse(previsaoCard(evento))]">
               {{ resumoPrevisaoCard(evento) }}
             </span>
@@ -333,6 +375,7 @@ export default {
       categorias: [],
       palestrantes: [],
       previsoesChuva: {},
+      previsaoFormulario: null,
       form: formInicial(),
       editandoId: null,
       mostrandoForm: false,
@@ -344,6 +387,7 @@ export default {
       },
       carregando: true,
       salvando: false,
+      carregandoPrevisaoFormulario: false,
       erro: null,
       erroForm: null,
       sucesso: null,
@@ -371,10 +415,15 @@ export default {
       return this.eventos.filter((evento) => {
         const categoriaId = this.idCategoria(evento)
         const dataEvento = toDateInputValue(evento.data)
-        const titulo = evento.titulo.toLowerCase()
+        const textoBusca = [
+          evento.titulo,
+          evento.local,
+          evento.cidade,
+          evento.uf
+        ].filter(Boolean).join(' ').toLowerCase()
 
         return (
-          (!busca || titulo.includes(busca)) &&
+          (!busca || textoBusca.includes(busca)) &&
           (!this.filtros.categoriaId || categoriaId === this.filtros.categoriaId) &&
           (!this.filtros.status || evento.status === this.filtros.status) &&
           (!this.filtros.data || dataEvento === this.filtros.data)
@@ -406,6 +455,13 @@ export default {
       handler(categoriaId) {
         this.filtros.categoriaId = categoriaId || ''
       }
+    },
+    'form.data': 'limparPrevisaoFormulario',
+    'form.horarioInicio': 'limparPrevisaoFormulario',
+    'form.cidade': 'limparPrevisaoFormulario',
+    'form.uf': 'limparPrevisaoFormulario',
+    'form.previsaoTempoAtiva'(ativa) {
+      if (!ativa) this.limparPrevisaoFormulario()
     }
   },
   async created() {
@@ -441,21 +497,22 @@ export default {
 
       await Promise.all(eventosComPrevisao.map(async (evento) => {
         try {
-          this.previsoesChuva = {
-            ...this.previsoesChuva,
-            [evento._id]: await eventoService.previsaoChuva(evento._id)
-          }
+          const previsao = await eventoService.previsaoChuva(evento._id)
+          this.registrarPrevisaoCard(evento._id, previsao)
         } catch (error) {
-          this.previsoesChuva = {
-            ...this.previsoesChuva,
-            [evento._id]: {
-              previsaoDisponivel: false,
-              nivelRisco: 'INDISPONIVEL',
-              mensagem: 'Previsao de chuva indisponivel'
-            }
-          }
+          this.registrarPrevisaoCard(evento._id, {
+            previsaoDisponivel: false,
+            nivelRisco: 'INDISPONIVEL',
+            mensagem: 'Previsao do tempo indisponivel'
+          })
         }
       }))
+    },
+    registrarPrevisaoCard(eventoId, previsao) {
+      this.previsoesChuva = {
+        ...this.previsoesChuva,
+        [eventoId]: previsao
+      }
     },
     abrirCadastro() {
       this.resetarForm()
@@ -468,8 +525,8 @@ export default {
         ...this.form,
         cargaHoraria: Number(this.form.cargaHoraria),
         vagas: Number(this.form.vagas),
-        cidade: this.form.previsaoTempoAtiva ? this.form.cidade : null,
-        uf: this.form.previsaoTempoAtiva ? this.form.uf : null,
+        cidade: this.form.cidade ? this.form.cidade.trim() : null,
+        uf: this.form.uf ? this.form.uf.trim().toUpperCase() : null,
         palestrantes: Array.isArray(this.form.palestrantes) ? this.form.palestrantes : [],
         inscricoesEncerramEm: this.form.status === 'aberto' ? this.form.inscricoesEncerramEm : null
       }
@@ -489,7 +546,10 @@ export default {
           return
         }
 
-        if (this.form.previsaoTempoAtiva && (!this.form.cidade || !this.form.uf)) {
+        const cidade = this.form.cidade?.trim()
+        const uf = this.form.uf?.trim()
+
+        if (this.form.previsaoTempoAtiva && (!cidade || !uf)) {
           this.erroForm = 'Informe cidade e UF para consultar a previsao do tempo.'
           return
         }
@@ -535,6 +595,7 @@ export default {
       this.mostrandoForm = true
       this.erroForm = null
       this.sucesso = null
+      this.previsaoFormulario = null
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     pedirExclusao(evento) {
@@ -564,6 +625,39 @@ export default {
     resetarForm() {
       this.form = formInicial()
       this.editandoId = null
+      this.previsaoFormulario = null
+      this.carregandoPrevisaoFormulario = false
+    },
+    limparPrevisaoFormulario() {
+      this.previsaoFormulario = null
+    },
+    async consultarPrevisaoFormulario() {
+      this.erroForm = null
+      this.previsaoFormulario = null
+
+      const cidade = this.form.cidade?.trim()
+      const uf = this.form.uf?.trim().toUpperCase()
+
+      if (!this.form.data || !this.form.horarioInicio || !cidade || !uf) {
+        this.erroForm = 'Informe data, horario de inicio, cidade e UF para consultar a previa do clima.'
+        return
+      }
+
+      this.carregandoPrevisaoFormulario = true
+      try {
+        this.previsaoFormulario = await eventoService.previsaoChuvaPreview({
+          titulo: this.form.titulo || 'Previa do evento',
+          data: this.form.data,
+          horarioInicio: this.form.horarioInicio,
+          horarioFim: this.form.horarioFim,
+          cidade,
+          uf
+        })
+      } catch (error) {
+        this.erroForm = error.message || 'Nao foi possivel consultar a previsao do tempo no momento.'
+      } finally {
+        this.carregandoPrevisaoFormulario = false
+      }
     },
     idCategoria(evento) {
       return typeof evento.categoriaId === 'object' ? evento.categoriaId._id : evento.categoriaId
@@ -593,18 +687,49 @@ export default {
       }
       return formatarStatus(evento.status)
     },
+    cidadeEvento(evento) {
+      return [evento.cidade, evento.uf].filter(Boolean).join('/')
+    },
+    localidadePrevisao(previsao) {
+      return [previsao?.cidade, previsao?.uf].filter(Boolean).join('/') || 'Localizacao consultada'
+    },
     previsaoCard(evento) {
       return this.previsoesChuva[evento._id] || null
     },
     resumoPrevisaoCard(evento) {
       const previsao = this.previsaoCard(evento)
       if (!previsao) return 'Consultando...'
-      if (!previsao.previsaoDisponivel) return 'Previsao indisponivel'
-      return `${previsao.probabilidadeChuvaHorario}% no horario`
+      if (!previsao.previsaoDisponivel) return 'Clima indisponivel'
+
+      const temperatura = this.formatTemp(previsao.temperaturaHorario)
+      const chuva = this.formatPercent(previsao.probabilidadeChuvaHorario)
+      if (temperatura !== '-') return `${temperatura} - chuva ${chuva}`
+      return `Chuva ${chuva} no horario`
     },
     riscoPrevisaoClasse(previsao) {
       const risco = previsao?.nivelRisco || 'INDISPONIVEL'
       return `previsao-${risco.toLowerCase()}`
+    },
+    labelRisco(risco) {
+      const labels = {
+        BAIXO_RISCO: 'Baixo risco',
+        RISCO_MODERADO: 'Risco moderado',
+        ALTO_RISCO: 'Alto risco',
+        INDISPONIVEL: 'Indisponivel'
+      }
+      return labels[risco] || 'Indisponivel'
+    },
+    formatPercent(value) {
+      return Number.isFinite(Number(value)) ? `${Number(value)}%` : '-'
+    },
+    formatMm(value) {
+      return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} mm` : '-'
+    },
+    formatTemp(value) {
+      return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} C` : '-'
+    },
+    formatWind(value) {
+      return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} km/h` : '-'
     },
     organizadorId(evento) {
       return typeof evento.organizadorId === 'object' ? evento.organizadorId._id : evento.organizadorId
