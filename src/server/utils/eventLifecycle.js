@@ -86,12 +86,14 @@ const resolveEventoStatus = (evento, inscritosCount = 0, now = new Date()) => {
 
 const toPublicEvento = (evento, inscritosCount = 0, now = new Date()) => {
   const plainEvento = typeof evento.toObject === 'function' ? evento.toObject() : { ...evento };
+  const statusConfigurado = normalizeBaseStatus(plainEvento.status);
   const lifecycle = resolveEventoStatus(plainEvento, inscritosCount, now);
   const vagasDisponiveis = Math.max(Number(plainEvento.vagas || 0) - Number(inscritosCount || 0), 0);
 
   return {
     ...plainEvento,
     ...lifecycle,
+    statusConfigurado,
     inscritosCount,
     vagasDisponiveis,
     inicioEm: getEventStartAt(plainEvento),

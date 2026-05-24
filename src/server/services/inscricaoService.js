@@ -23,6 +23,17 @@ class InscricaoService {
     return Inscricao.countDocuments({ eventoId, ...activeSubscriptionFilter });
   }
 
+  async toPublicInscricao(inscricao) {
+    const plainInscricao = typeof inscricao.toObject === 'function' ? inscricao.toObject() : { ...inscricao };
+
+    if (plainInscricao.eventoId?._id) {
+      const totalInscritos = await this.countActiveSubscriptions(plainInscricao.eventoId._id);
+      plainInscricao.eventoId = toPublicEvento(plainInscricao.eventoId, totalInscritos);
+    }
+
+    return plainInscricao;
+  }
+
   async create(eventoId, currentUser) {
     const evento = await Evento.findById(eventoId);
     if (!evento || !evento.ativo) throw new ApiError(404, 'Evento nao encontrado ou inativo.');
@@ -44,10 +55,13 @@ class InscricaoService {
       existing.presencaConfirmada = false;
       existing.dataInscricao = new Date();
       await existing.save();
-      return existing;
+      await existing.populate('eventoId', 'titulo data horarioInicio horarioFim local status vagas inscricoesEncerramEm permiteCertificado');
+      return this.toPublicInscricao(existing);
     }
 
-    return Inscricao.create({ usuarioId: currentUser._id, eventoId });
+    const inscricao = await Inscricao.create({ usuarioId: currentUser._id, eventoId });
+    await inscricao.populate('eventoId', 'titulo data horarioInicio horarioFim local status vagas inscricoesEncerramEm permiteCertificado');
+    return this.toPublicInscricao(inscricao);
   }
 
   async cancel(inscricaoId, currentUser) {
@@ -63,15 +77,15 @@ class InscricaoService {
       throw new ApiError(404, 'Evento da inscricao nao encontrado.');
     }
 
-    const totalInscritos = await this.countActiveSubscriptions(inscricao.eventoId._id);
-    const lifecycle = resolveEventoStatus(inscricao.eventoId, totalInscritos);
+    const totalInscritosAntesCancelamento = await this.countActiveSubscriptions(inscricao.eventoId._id);
+    const lifecycle = resolveEventoStatus(inscricao.eventoId, totalInscritosAntesCancelamento);
     if (lifecycle.status === 'encerrado') {
       throw new ApiError(400, 'Nao e possivel cancelar inscricao de evento ja realizado.');
     }
 
     inscricao.status = 'cancelada';
     await inscricao.save();
-    return inscricao;
+    return this.toPublicInscricao(inscricao);
   }
 
   async getMine(currentUser) {
@@ -79,14 +93,7 @@ class InscricaoService {
       .populate('eventoId', 'titulo data horarioInicio horarioFim local status vagas inscricoesEncerramEm permiteCertificado')
       .sort({ createdAt: -1 });
 
-    return Promise.all(inscricoes.map(async (inscricao) => {
-      const plainInscricao = inscricao.toObject();
-      if (plainInscricao.eventoId?._id) {
-        const totalInscritos = await this.countActiveSubscriptions(plainInscricao.eventoId._id);
-        plainInscricao.eventoId = toPublicEvento(plainInscricao.eventoId, totalInscritos);
-      }
-      return plainInscricao;
-    }));
+    return Promise.all(inscricoes.map((inscricao) => this.toPublicInscricao(inscricao)));
   }
 }
 

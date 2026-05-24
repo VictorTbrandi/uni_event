@@ -48,6 +48,7 @@ export interface Evento {
   palestrantes: Array<string | Palestrante>
   organizadorId: string | Pick<User, '_id' | 'nome' | 'email'>
   status: 'aberto' | 'fechado' | 'encerrado' | 'cancelado'
+  statusConfigurado?: 'aberto' | 'fechado' | 'cancelado'
   motivoFechamentoInscricao?: string | null
   inscritosCount?: number
   vagasDisponiveis?: number

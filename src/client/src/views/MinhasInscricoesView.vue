@@ -149,6 +149,9 @@ export default {
       try {
         const atualizada = await inscricaoService.cancelar(inscricao._id)
         inscricao.status = atualizada.status
+        if (atualizada.eventoId) {
+          inscricao.eventoId = atualizada.eventoId
+        }
       } catch (error) {
         this.erro = error.message || 'Erro ao cancelar inscrição.'
       } finally {

@@ -10,8 +10,14 @@
           Organize as categorias e navegue para os eventos relacionados.
         </p>
       </div>
-      <button v-if="podeGerenciar" type="button" class="btn-submit btn-header" @click="abrirCadastro">
-        Cadastrar categoria
+      <button
+        v-if="podeGerenciar"
+        type="button"
+        class="btn-submit btn-header"
+        :disabled="mostrandoForm"
+        @click="abrirCadastro"
+      >
+        {{ mostrandoForm ? 'Formulario aberto' : 'Cadastrar categoria' }}
       </button>
     </div>
 
@@ -123,6 +129,10 @@ export default {
       }
     },
     abrirCadastro() {
+      if (this.mostrandoForm) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.resetarForm()
       this.mostrandoForm = true
       this.erroForm = null

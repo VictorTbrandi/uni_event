@@ -29,7 +29,9 @@
     <!-- ============ UNIVERSIDADES ============ -->
     <section v-if="abaAtiva === 'universidades'">
       <div class="card-acoes card-acoes-linha card-acoes-topo">
-        <button type="button" class="btn-submit" @click="abrirFormUni()">Cadastrar universidade</button>
+        <button type="button" class="btn-submit" :disabled="formUniAberto" @click="abrirFormUni()">
+          {{ formUniAberto ? 'Formulario aberto' : 'Cadastrar universidade' }}
+        </button>
       </div>
 
       <section v-if="formUniAberto" class="painel-card crud-form-card">
@@ -121,8 +123,13 @@
     <!-- ============ CAMPI ============ -->
     <section v-if="abaAtiva === 'campi'">
       <div class="card-acoes card-acoes-linha card-acoes-topo">
-        <button type="button" class="btn-submit" :disabled="universidades.length === 0" @click="abrirFormCampus()">
-          Cadastrar campus
+        <button
+          type="button"
+          class="btn-submit"
+          :disabled="universidades.length === 0 || formCampusAberto"
+          @click="abrirFormCampus()"
+        >
+          {{ formCampusAberto ? 'Formulario aberto' : 'Cadastrar campus' }}
         </button>
       </div>
 
@@ -205,8 +212,13 @@
     <!-- ============ DEPARTAMENTOS ============ -->
     <section v-if="abaAtiva === 'departamentos'">
       <div class="card-acoes card-acoes-linha card-acoes-topo">
-        <button type="button" class="btn-submit" :disabled="universidades.length === 0" @click="abrirFormDep()">
-          Cadastrar departamento
+        <button
+          type="button"
+          class="btn-submit"
+          :disabled="universidades.length === 0 || formDepAberto"
+          @click="abrirFormDep()"
+        >
+          {{ formDepAberto ? 'Formulario aberto' : 'Cadastrar departamento' }}
         </button>
       </div>
 
@@ -275,8 +287,13 @@
     <!-- ============ CURSOS ============ -->
     <section v-if="abaAtiva === 'cursos'">
       <div class="card-acoes card-acoes-linha card-acoes-topo">
-        <button type="button" class="btn-submit" :disabled="universidades.length === 0" @click="abrirFormCurso()">
-          Cadastrar curso
+        <button
+          type="button"
+          class="btn-submit"
+          :disabled="universidades.length === 0 || formCursoAberto"
+          @click="abrirFormCurso()"
+        >
+          {{ formCursoAberto ? 'Formulario aberto' : 'Cadastrar curso' }}
         </button>
       </div>
 
@@ -369,8 +386,13 @@
     <!-- ============ SALAS ============ -->
     <section v-if="abaAtiva === 'salas'">
       <div class="card-acoes card-acoes-linha card-acoes-topo">
-        <button type="button" class="btn-submit" :disabled="universidades.length === 0" @click="abrirFormSala()">
-          Cadastrar sala
+        <button
+          type="button"
+          class="btn-submit"
+          :disabled="universidades.length === 0 || formSalaAberto"
+          @click="abrirFormSala()"
+        >
+          {{ formSalaAberto ? 'Formulario aberto' : 'Cadastrar sala' }}
         </button>
       </div>
 
@@ -661,6 +683,10 @@ export default {
 
     /* ===== Universidade ===== */
     abrirFormUni() {
+      if (this.formUniAberto) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.formUni = formUniInicial()
       this.uniEditandoId = null
       this.erroUni = null
@@ -726,6 +752,10 @@ export default {
 
     /* ===== Campus ===== */
     abrirFormCampus() {
+      if (this.formCampusAberto) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.formCampus = formCampusInicial()
       this.campusEditandoId = null
       this.erroCampus = null
@@ -785,6 +815,10 @@ export default {
 
     /* ===== Departamento ===== */
     abrirFormDep() {
+      if (this.formDepAberto) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.formDep = formDepInicial()
       this.depEditandoId = null
       this.erroDep = null
@@ -840,6 +874,10 @@ export default {
 
     /* ===== Curso ===== */
     abrirFormCurso() {
+      if (this.formCursoAberto) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.formCurso = formCursoInicial()
       this.cursoEditandoId = null
       this.erroCurso = null
@@ -901,6 +939,10 @@ export default {
 
     /* ===== Sala ===== */
     abrirFormSala() {
+      if (this.formSalaAberto) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.formSala = formSalaInicial()
       this.salaEditandoId = null
       this.erroSala = null

@@ -16,7 +16,6 @@ const {
 
 const activeSubscriptionFilter = { status: { $ne: 'cancelada' } };
 
-const canSeeClosedEvents = (currentUser) => ['admin', 'organizador'].includes(currentUser?.tipoPerfil);
 const createStatusOptions = ['aberto', 'fechado'];
 const updateStatusOptions = ['aberto', 'fechado', 'cancelado'];
 
@@ -91,18 +90,6 @@ const assertScheduleRules = (payload) => {
 class EventoService {
   async countActiveSubscriptions(eventoId) {
     return Inscricao.countDocuments({ eventoId, ...activeSubscriptionFilter });
-  }
-
-  async hasActiveSubscription(eventoId, currentUser) {
-    if (!currentUser?._id) return false;
-
-    const inscricao = await Inscricao.findOne({
-      eventoId,
-      usuarioId: currentUser._id,
-      ...activeSubscriptionFilter
-    }).select('_id');
-
-    return Boolean(inscricao);
   }
 
   async enrich(evento) {
@@ -213,7 +200,7 @@ class EventoService {
     return this.findById(evento._id, currentUser);
   }
 
-  async findAll(currentUser = null) {
+  async findAll() {
     const eventos = await Evento.find()
       .populate('categoriaId', 'nome')
       .populate('palestrantes', 'nome email instituicao')
@@ -223,16 +210,10 @@ class EventoService {
       .populate('campusId', 'nome sigla cidade uf')
       .sort({ data: 1, horarioInicio: 1 });
 
-    const enriched = await Promise.all(eventos.map((evento) => this.enrich(evento)));
-
-    if (canSeeClosedEvents(currentUser)) {
-      return enriched;
-    }
-
-    return enriched.filter((evento) => evento.status === 'aberto');
+    return Promise.all(eventos.map((evento) => this.enrich(evento)));
   }
 
-  async findById(id, currentUser = null) {
+  async findById(id) {
     const evento = await Evento.findById(id)
       .populate('categoriaId', 'nome descricao')
       .populate('palestrantes', 'nome email instituicao areaAtuacao')
@@ -242,14 +223,7 @@ class EventoService {
       .populate('campusId', 'nome sigla cidade uf');
 
     if (!evento) throw new ApiError(404, 'Evento nao encontrado.');
-    const enriched = await this.enrich(evento);
-
-    const canSeeAsSubscriber = await this.hasActiveSubscription(evento._id, currentUser);
-    if (!canSeeClosedEvents(currentUser) && !canSeeAsSubscriber && enriched.status !== 'aberto') {
-      throw new ApiError(404, 'Evento nao encontrado.');
-    }
-
-    return enriched;
+    return this.enrich(evento);
   }
 
   async update(id, payload, currentUser) {
@@ -307,15 +281,9 @@ class EventoService {
       .sort({ createdAt: -1 });
   }
 
-  async getRainForecast(id, currentUser = null) {
+  async getRainForecast(id) {
     const evento = await Evento.findById(id);
     if (!evento) throw new ApiError(404, 'Evento nao encontrado.');
-
-    const enriched = await this.enrich(evento);
-    const canSeeAsSubscriber = await this.hasActiveSubscription(evento._id, currentUser);
-    if (!canSeeClosedEvents(currentUser) && !canSeeAsSubscriber && enriched.status !== 'aberto') {
-      throw new ApiError(404, 'Evento nao encontrado.');
-    }
 
     const inscritosCount = await this.countActiveSubscriptions(evento._id);
     return previsaoTempoService.getPrevisaoChuva(evento, inscritosCount);

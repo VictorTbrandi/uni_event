@@ -10,8 +10,14 @@
           Cadastre e edite palestrantes sem sair da listagem.
         </p>
       </div>
-      <button v-if="podeGerenciar" type="button" class="btn-submit btn-header" @click="abrirCadastro">
-        Cadastrar palestrante
+      <button
+        v-if="podeGerenciar"
+        type="button"
+        class="btn-submit btn-header"
+        :disabled="mostrandoForm"
+        @click="abrirCadastro"
+      >
+        {{ mostrandoForm ? 'Formulario aberto' : 'Cadastrar palestrante' }}
       </button>
     </div>
 
@@ -246,6 +252,10 @@ export default {
       }
     },
     abrirCadastro() {
+      if (this.mostrandoForm) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.resetarForm()
       this.mostrandoForm = true
       this.erroForm = null

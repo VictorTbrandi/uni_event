@@ -10,8 +10,14 @@
           Cadastre, edite e acompanhe eventos nesta mesma tela.
         </p>
       </div>
-      <button v-if="podeGerenciar" type="button" class="btn-submit btn-header" @click="abrirCadastro">
-        Cadastrar evento
+      <button
+        v-if="podeGerenciar"
+        type="button"
+        class="btn-submit btn-header"
+        :disabled="mostrandoForm"
+        @click="abrirCadastro"
+      >
+        {{ mostrandoForm ? 'Formulario aberto' : 'Cadastrar evento' }}
       </button>
     </div>
 
@@ -594,6 +600,10 @@ export default {
       }
     },
     abrirCadastro() {
+      if (this.mostrandoForm) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
       this.resetarForm()
       this.mostrandoForm = true
       this.erroForm = null
@@ -674,7 +684,9 @@ export default {
         palestrantes: (evento.palestrantes || []).map((palestrante) => (
           typeof palestrante === 'object' ? palestrante._id : palestrante
         )),
-        status: ['aberto', 'cancelado'].includes(evento.status) ? evento.status : 'fechado',
+        status: ['aberto', 'cancelado'].includes(evento.statusConfigurado || evento.status)
+          ? (evento.statusConfigurado || evento.status)
+          : 'fechado',
         permiteCertificado: evento.permiteCertificado
       }
       this.mostrandoForm = true
