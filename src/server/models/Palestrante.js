@@ -34,6 +34,28 @@ const palestranteSchema = new mongoose.Schema(
       maxlength: 120,
       default: null
     },
+    universidadeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Universidade',
+      default: null
+    },
+    titulacao: {
+      type: String,
+      enum: ['graduado', 'especialista', 'mestre', 'doutor', 'pos_doutor', null],
+      default: null
+    },
+    lattes: {
+      type: String,
+      trim: true,
+      maxlength: 250,
+      default: null
+    },
+    linkedin: {
+      type: String,
+      trim: true,
+      maxlength: 250,
+      default: null
+    },
     fotoUrl: {
       type: String,
       trim: true,

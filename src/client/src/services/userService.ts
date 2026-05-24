@@ -6,6 +6,8 @@ export interface UserPayload {
   senha?: string
   tipoPerfil: Perfil
   curso?: string | null
+  universidadeId?: string | null
+  cursoId?: string | null
   ra?: string | null
   ativo?: boolean
 }

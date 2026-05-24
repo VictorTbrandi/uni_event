@@ -18,7 +18,6 @@
     <section v-if="mostrandoForm" class="painel-card crud-form-card">
       <h2>{{ editandoId ? 'Editar categoria' : 'Cadastrar categoria' }}</h2>
       <div v-if="erroForm" class="estado-erro form-erro">{{ erroForm }}</div>
-      <div v-if="sucesso" class="estado-sucesso">{{ sucesso }}</div>
 
       <form @submit.prevent="salvar">
         <div class="form-group">
@@ -74,6 +73,7 @@
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { authStorage } from '@/services/api'
 import { categoriaService } from '@/services/categoriaService'
+import { toastService } from '@/services/toastService'
 
 const formInicial = () => ({ nome: '', descricao: '' })
 
@@ -131,15 +131,14 @@ export default {
     async salvar() {
       this.salvando = true
       this.erroForm = null
-      this.sucesso = null
 
       try {
         if (this.editandoId) {
           await categoriaService.atualizar(this.editandoId, this.form)
-          this.sucesso = 'Categoria atualizada com sucesso.'
+          toastService.success('Categoria atualizada com sucesso.')
         } else {
           await categoriaService.criar(this.form)
-          this.sucesso = 'Categoria cadastrada com sucesso.'
+          toastService.success('Categoria cadastrada com sucesso.')
         }
         this.resetarForm()
         this.mostrandoForm = false
@@ -174,9 +173,10 @@ export default {
           this.fecharForm()
         }
         this.categoriaParaExcluir = null
+        toastService.success('Categoria excluida com sucesso.')
         await this.carregarCategorias()
       } catch (error) {
-        this.erro = error.message || 'Erro ao excluir categoria.'
+        toastService.error(error.message || 'Erro ao excluir categoria.')
       }
     },
     fecharForm() {

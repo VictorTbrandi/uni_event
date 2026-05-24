@@ -22,6 +22,9 @@ const eventoValidator = [
   body('vagas').isInt({ min: 1 }).withMessage('Vagas deve ser maior que zero.'),
   body('inscricoesEncerramEm').optional({ nullable: true }).isISO8601().withMessage('Encerramento das inscricoes invalido.'),
   body('categoriaId').isMongoId().withMessage('Categoria invalida.'),
+  body('universidadeId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Universidade invalida.'),
+  body('departamentoId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Departamento invalido.'),
+  body('campusId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Campus invalido.'),
   body('palestrantes').optional().isArray().withMessage('Palestrantes deve ser um array.'),
   body('status').optional().isIn(['aberto', 'fechado', 'encerrado', 'cancelado']).withMessage('Status invalido.'),
   body('permiteCertificado').optional().isBoolean().withMessage('PermiteCertificado deve ser booleano.')

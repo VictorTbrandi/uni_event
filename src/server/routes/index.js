@@ -8,6 +8,12 @@ const inscricaoRoutes = require('./inscricaoRoutes');
 const certificadoRoutes = require('./certificadoRoutes');
 const feedbackRoutes = require('./feedbackRoutes');
 const iaRoutes = require('./iaRoutes');
+const universidadeRoutes = require('./universidadeRoutes');
+const campusRoutes = require('./campusRoutes');
+const departamentoRoutes = require('./departamentoRoutes');
+const cursoRoutes = require('./cursoRoutes');
+const salaRoutes = require('./salaRoutes');
+const atividadeRoutes = require('./atividadeRoutes');
 
 const router = express.Router();
 
@@ -20,5 +26,11 @@ router.use('/inscricoes', inscricaoRoutes);
 router.use('/certificados', certificadoRoutes);
 router.use('/feedbacks', feedbackRoutes);
 router.use('/ia', iaRoutes);
+router.use('/universidades', universidadeRoutes);
+router.use('/campi', campusRoutes);
+router.use('/departamentos', departamentoRoutes);
+router.use('/cursos', cursoRoutes);
+router.use('/salas', salaRoutes);
+router.use('/atividades', atividadeRoutes);
 
 module.exports = router;

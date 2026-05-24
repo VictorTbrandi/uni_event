@@ -39,9 +39,27 @@
               </select>
             </div>
           </div>
+
           <div class="form-grid">
             <div class="form-group">
-              <label>Curso</label>
+              <label>Universidade</label>
+              <select v-model="form.universidadeId">
+                <option value="">Nao vinculado</option>
+                <option v-for="u in universidades" :key="u._id" :value="u._id">{{ u.sigla }} - {{ u.nome }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Curso vinculado</label>
+              <select v-model="form.cursoId" :disabled="!form.universidadeId">
+                <option value="">Nenhum</option>
+                <option v-for="c in cursosFiltrados" :key="c._id" :value="c._id">{{ c.nome }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Curso (texto livre)</label>
               <input v-model="form.curso" type="text" />
             </div>
             <div class="form-group">
@@ -70,6 +88,8 @@
                 <th>Nome</th>
                 <th>E-mail</th>
                 <th>Perfil</th>
+                <th>Universidade</th>
+                <th>Curso</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -79,6 +99,8 @@
                 <td>{{ usuario.nome }}</td>
                 <td>{{ usuario.email }}</td>
                 <td>{{ formatarPerfil(usuario.tipoPerfil) }}</td>
+                <td>{{ siglaUniversidade(usuario) || '-' }}</td>
+                <td>{{ nomeCurso(usuario) || '-' }}</td>
                 <td>{{ usuario.ativo ? 'Ativo' : 'Inativo' }}</td>
                 <td class="acoes-tabela">
                   <button type="button" class="btn-mini" @click="editar(usuario)">Editar</button>
@@ -105,7 +127,12 @@
 <script>
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { userService } from '@/services/userService'
+import { universidadeService } from '@/services/universidadeService'
+import { cursoService } from '@/services/cursoService'
+import { toastService } from '@/services/toastService'
 import { formatarPerfil } from '@/utils/formatters'
+
+const idDe = (ref) => (ref && typeof ref === 'object' ? ref._id : ref)
 
 const formInicial = () => ({
   nome: '',
@@ -113,6 +140,8 @@ const formInicial = () => ({
   senha: '',
   tipoPerfil: 'participante',
   curso: '',
+  universidadeId: '',
+  cursoId: '',
   ra: '',
   ativo: true
 })
@@ -125,6 +154,8 @@ export default {
   data() {
     return {
       usuarios: [],
+      universidades: [],
+      cursos: [],
       form: formInicial(),
       editandoId: null,
       carregando: true,
@@ -138,16 +169,54 @@ export default {
     mensagemExclusao() {
       const nome = this.usuarioParaExcluir?.nome || 'este usuario'
       return `Tem certeza que deseja excluir "${nome}"? Essa acao nao pode ser desfeita.`
+    },
+    cursosFiltrados() {
+      if (!this.form.universidadeId) return []
+      return this.cursos.filter((c) => idDe(c.universidadeId) === this.form.universidadeId)
+    }
+  },
+  watch: {
+    'form.universidadeId'(novoValor, valorAnterior) {
+      if (novoValor !== valorAnterior) {
+        const cursoOk = this.cursos.some(
+          (c) => c._id === this.form.cursoId && idDe(c.universidadeId) === novoValor
+        )
+        if (!cursoOk) this.form.cursoId = ''
+      }
     }
   },
   async created() {
-    await this.carregarUsuarios()
+    await this.carregarTudo()
   },
   methods: {
     formatarPerfil,
-    async carregarUsuarios() {
+    siglaUniversidade(usuario) {
+      const ref = usuario.universidadeId
+      if (!ref) return ''
+      if (typeof ref === 'object') return ref.sigla || ref.nome
+      const u = this.universidades.find((x) => x._id === ref)
+      return u ? u.sigla : ''
+    },
+    nomeCurso(usuario) {
+      const ref = usuario.cursoId
+      if (ref) {
+        if (typeof ref === 'object') return ref.nome
+        const c = this.cursos.find((x) => x._id === ref)
+        if (c) return c.nome
+      }
+      return usuario.curso || ''
+    },
+    async carregarTudo() {
+      this.carregando = true
       try {
-        this.usuarios = await userService.listar()
+        const [usuarios, universidades, cursos] = await Promise.all([
+          userService.listar(),
+          universidadeService.listar(),
+          cursoService.listar()
+        ])
+        this.usuarios = usuarios
+        this.universidades = universidades
+        this.cursos = cursos
       } catch (error) {
         this.erroLista = error.message || 'Erro ao carregar usuários.'
       } finally {
@@ -159,21 +228,36 @@ export default {
       this.erroForm = null
 
       try {
+        const baseInstitucional = {
+          curso: this.form.curso || null,
+          universidadeId: this.form.universidadeId || null,
+          cursoId: this.form.cursoId || null,
+          ra: this.form.ra || null
+        }
+
         if (this.editandoId) {
           const payload = {
             nome: this.form.nome,
             email: this.form.email,
             tipoPerfil: this.form.tipoPerfil,
-            curso: this.form.curso,
-            ra: this.form.ra,
-            ativo: this.form.ativo
+            ativo: this.form.ativo,
+            ...baseInstitucional
           }
           await userService.atualizar(this.editandoId, payload)
+          toastService.success('Usuario atualizado com sucesso.')
         } else {
-          await userService.criar(this.form)
+          await userService.criar({
+            nome: this.form.nome,
+            email: this.form.email,
+            senha: this.form.senha,
+            tipoPerfil: this.form.tipoPerfil,
+            ativo: this.form.ativo,
+            ...baseInstitucional
+          })
+          toastService.success('Usuario cadastrado com sucesso.')
         }
         this.resetarForm()
-        await this.carregarUsuarios()
+        await this.carregarTudo()
       } catch (error) {
         this.erroForm = error.message || 'Erro ao salvar usuário.'
       } finally {
@@ -188,6 +272,8 @@ export default {
         senha: '',
         tipoPerfil: usuario.tipoPerfil,
         curso: usuario.curso || '',
+        universidadeId: idDe(usuario.universidadeId) || '',
+        cursoId: idDe(usuario.cursoId) || '',
         ra: usuario.ra || '',
         ativo: usuario.ativo
       }
@@ -202,9 +288,10 @@ export default {
       try {
         await userService.excluir(usuario._id)
         this.usuarioParaExcluir = null
-        await this.carregarUsuarios()
+        toastService.success('Usuario excluido com sucesso.')
+        await this.carregarTudo()
       } catch (error) {
-        this.erroLista = error.message || 'Erro ao excluir usuário.'
+        toastService.error(error.message || 'Erro ao excluir usuário.')
       }
     },
     resetarForm() {

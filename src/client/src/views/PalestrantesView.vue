@@ -18,7 +18,6 @@
     <section v-if="mostrandoForm" class="painel-card crud-form-card">
       <h2>{{ editandoId ? 'Editar palestrante' : 'Cadastrar palestrante' }}</h2>
       <div v-if="erroForm" class="estado-erro form-erro">{{ erroForm }}</div>
-      <div v-if="sucesso" class="estado-sucesso">{{ sucesso }}</div>
 
       <form @submit.prevent="salvar">
         <div class="form-group">
@@ -35,8 +34,34 @@
             <input v-model="form.areaAtuacao" type="text" />
           </div>
           <div class="form-group">
-            <label>Instituicao</label>
-            <input v-model="form.instituicao" type="text" />
+            <label>Titulacao</label>
+            <select v-model="form.titulacao">
+              <option value="">Nao informada</option>
+              <option v-for="t in titulacoes" :key="t.valor" :value="t.valor">{{ t.rotulo }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Universidade vinculada</label>
+            <select v-model="form.universidadeId">
+              <option value="">Nao vinculada</option>
+              <option v-for="u in universidades" :key="u._id" :value="u._id">{{ u.sigla }} - {{ u.nome }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Instituicao (texto livre)</label>
+            <input v-model="form.instituicao" type="text" placeholder="Use se nao usar uma das universidades cadastradas" />
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Lattes</label>
+            <input v-model="form.lattes" type="url" placeholder="http://lattes.cnpq.br/..." />
+          </div>
+          <div class="form-group">
+            <label>LinkedIn</label>
+            <input v-model="form.linkedin" type="url" placeholder="https://linkedin.com/in/..." />
           </div>
         </div>
         <div class="form-group">
@@ -95,9 +120,17 @@
             <span class="icone">Area</span>
             <span>{{ p.areaAtuacao }}</span>
           </div>
-          <div v-if="p.instituicao" class="evento-info">
+          <div v-if="p.titulacao" class="evento-info">
+            <span class="icone">Titulo</span>
+            <span>{{ rotuloTitulacao(p.titulacao) }}</span>
+          </div>
+          <div v-if="rotuloUniversidade(p) || p.instituicao" class="evento-info">
             <span class="icone">Inst.</span>
-            <span>{{ p.instituicao }}</span>
+            <span>{{ rotuloUniversidade(p) || p.instituicao }}</span>
+          </div>
+          <div v-if="p.lattes || p.linkedin" class="evento-info evento-info-links">
+            <a v-if="p.lattes" :href="p.lattes" target="_blank" rel="noopener" class="link-mini">Lattes</a>
+            <a v-if="p.linkedin" :href="p.linkedin" target="_blank" rel="noopener" class="link-mini">LinkedIn</a>
           </div>
           <p v-if="p.biografia" class="palestrante-bio">{{ p.biografia }}</p>
 
@@ -123,7 +156,11 @@
 <script>
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { authStorage } from '@/services/api'
-import { palestranteService } from '@/services/palestranteService'
+import { palestranteService, titulacoesPermitidas } from '@/services/palestranteService'
+import { universidadeService } from '@/services/universidadeService'
+import { toastService } from '@/services/toastService'
+
+const idDe = (ref) => (ref && typeof ref === 'object' ? ref._id : ref)
 
 const formInicial = () => ({
   nome: '',
@@ -131,7 +168,11 @@ const formInicial = () => ({
   biografia: '',
   areaAtuacao: '',
   instituicao: '',
-  fotoUrl: ''
+  fotoUrl: '',
+  universidadeId: '',
+  titulacao: '',
+  lattes: '',
+  linkedin: ''
 })
 
 export default {
@@ -142,6 +183,7 @@ export default {
   data() {
     return {
       palestrantes: [],
+      universidades: [],
       form: formInicial(),
       editandoId: null,
       mostrandoForm: false,
@@ -156,7 +198,7 @@ export default {
     }
   },
   async created() {
-    await this.carregarPalestrantes()
+    await Promise.all([this.carregarPalestrantes(), this.carregarUniversidades()])
   },
   computed: {
     podeGerenciar() {
@@ -166,9 +208,24 @@ export default {
     mensagemExclusao() {
       const nome = this.palestranteParaExcluir?.nome || 'este palestrante'
       return `Tem certeza que deseja excluir "${nome}"? Essa acao nao pode ser desfeita.`
+    },
+    titulacoes() {
+      return titulacoesPermitidas
     }
   },
   methods: {
+    rotuloTitulacao(valor) {
+      return titulacoesPermitidas.find((t) => t.valor === valor)?.rotulo || valor
+    },
+    rotuloUniversidade(palestrante) {
+      const ref = palestrante.universidadeId
+      if (!ref) return ''
+      if (typeof ref === 'object') {
+        return ref.sigla ? `${ref.sigla} - ${ref.nome}` : ref.nome
+      }
+      const u = this.universidades.find((x) => x._id === ref)
+      return u ? `${u.sigla} - ${u.nome}` : ''
+    },
     async carregarPalestrantes() {
       this.carregando = true
       this.erro = null
@@ -181,6 +238,13 @@ export default {
         this.carregando = false
       }
     },
+    async carregarUniversidades() {
+      try {
+        this.universidades = await universidadeService.listar()
+      } catch (error) {
+        this.universidades = []
+      }
+    },
     abrirCadastro() {
       this.resetarForm()
       this.mostrandoForm = true
@@ -188,18 +252,31 @@ export default {
       this.sucesso = null
       this.previewFotoComErro = false
     },
+    payloadPalestrante() {
+      return {
+        nome: this.form.nome,
+        email: this.form.email,
+        biografia: this.form.biografia || null,
+        areaAtuacao: this.form.areaAtuacao || null,
+        instituicao: this.form.instituicao || null,
+        fotoUrl: this.form.fotoUrl || null,
+        universidadeId: this.form.universidadeId || null,
+        titulacao: this.form.titulacao || null,
+        lattes: this.form.lattes || null,
+        linkedin: this.form.linkedin || null
+      }
+    },
     async salvar() {
       this.salvando = true
       this.erroForm = null
-      this.sucesso = null
 
       try {
         if (this.editandoId) {
-          await palestranteService.atualizar(this.editandoId, this.form)
-          this.sucesso = 'Palestrante atualizado com sucesso.'
+          await palestranteService.atualizar(this.editandoId, this.payloadPalestrante())
+          toastService.success('Palestrante atualizado com sucesso.')
         } else {
-          await palestranteService.criar(this.form)
-          this.sucesso = 'Palestrante cadastrado com sucesso.'
+          await palestranteService.criar(this.payloadPalestrante())
+          toastService.success('Palestrante cadastrado com sucesso.')
         }
         this.resetarForm()
         this.mostrandoForm = false
@@ -218,7 +295,11 @@ export default {
         biografia: palestrante.biografia || '',
         areaAtuacao: palestrante.areaAtuacao || '',
         instituicao: palestrante.instituicao || '',
-        fotoUrl: palestrante.fotoUrl || ''
+        fotoUrl: palestrante.fotoUrl || '',
+        universidadeId: idDe(palestrante.universidadeId) || '',
+        titulacao: palestrante.titulacao || '',
+        lattes: palestrante.lattes || '',
+        linkedin: palestrante.linkedin || ''
       }
       this.mostrandoForm = true
       this.erroForm = null
@@ -239,9 +320,10 @@ export default {
           this.fecharForm()
         }
         this.palestranteParaExcluir = null
+        toastService.success('Palestrante excluido com sucesso.')
         await this.carregarPalestrantes()
       } catch (error) {
-        this.erro = error.message || 'Erro ao excluir palestrante.'
+        toastService.error(error.message || 'Erro ao excluir palestrante.')
       }
     },
     fecharForm() {

@@ -34,6 +34,16 @@ const userSchema = new mongoose.Schema(
       maxlength: 100,
       default: null
     },
+    universidadeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Universidade',
+      default: null
+    },
+    cursoId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Curso',
+      default: null
+    },
     ra: {
       type: String,
       trim: true,

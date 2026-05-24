@@ -71,6 +71,24 @@
                 <p>{{ evento.inscricoesEncerramEm ? formatarDataHora(evento.inscricoesEncerramEm) : 'Fechadas' }}</p>
               </div>
             </div>
+            <div v-if="rotuloUniversidade" class="detalhe-info-bloco">
+              <div>
+                <strong>Universidade</strong>
+                <p>{{ rotuloUniversidade }}</p>
+              </div>
+            </div>
+            <div v-if="rotuloDepartamento" class="detalhe-info-bloco">
+              <div>
+                <strong>Departamento</strong>
+                <p>{{ rotuloDepartamento }}</p>
+              </div>
+            </div>
+            <div v-if="rotuloCampus" class="detalhe-info-bloco">
+              <div>
+                <strong>Campus</strong>
+                <p>{{ rotuloCampus }}</p>
+              </div>
+            </div>
           </div>
 
           <section v-if="evento.previsaoTempoAtiva" class="detalhe-secao">
@@ -143,6 +161,42 @@
             <p v-else class="texto-suave">Palestrantes a definir.</p>
           </section>
 
+          <section class="detalhe-secao">
+            <div class="linha-entre" style="align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+              <h2 style="margin-bottom: 0;">Programacao</h2>
+              <router-link
+                v-if="podeGerenciarProgramacao"
+                :to="{ name: 'evento-programacao', params: { id: evento._id } }"
+                class="btn-mini-link"
+              >
+                Gerenciar atividades
+              </router-link>
+            </div>
+
+            <div v-if="carregandoAtividades" class="texto-suave">Carregando atividades...</div>
+            <p v-else-if="!atividades.length" class="texto-suave">Programacao detalhada ainda nao divulgada.</p>
+            <ul v-else class="timeline-atividades-detalhe">
+              <li v-for="a in atividades" :key="a._id" class="timeline-detalhe-item">
+                <div class="timeline-detalhe-horario">
+                  <strong>{{ horario(a.inicio) }}</strong>
+                  <span>{{ horario(a.fim) }}</span>
+                </div>
+                <div class="timeline-detalhe-conteudo">
+                  <div class="linha-entre" style="align-items: center;">
+                    <span class="tag">{{ rotuloTipoAtividade(a.tipo) }}</span>
+                    <span v-if="a.cargaHoraria" class="texto-suave">{{ a.cargaHoraria }}h</span>
+                  </div>
+                  <h3>{{ a.titulo }}</h3>
+                  <p v-if="a.descricao" class="texto-suave">{{ a.descricao }}</p>
+                  <div class="timeline-detalhe-meta">
+                    <span v-if="nomeSalaAtividade(a)"><strong>Sala:</strong> {{ nomeSalaAtividade(a) }}</span>
+                    <span v-if="nomesPalestrantesAtividade(a)"><strong>Palestrantes:</strong> {{ nomesPalestrantesAtividade(a) }}</span>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </section>
+
           <div class="detalhe-rodape">
             <p :class="['evento-vagas', { esgotado: vagasDisponiveis === 0 }]">
               {{ vagasDisponiveis }} de {{ evento.vagas }} vagas disponiveis
@@ -165,12 +219,15 @@
 import { authStorage } from '@/services/api'
 import { eventoService } from '@/services/eventoService'
 import { inscricaoService } from '@/services/inscricaoService'
+import { atividadeService, tiposAtividade } from '@/services/atividadeService'
 import {
   formatarData,
   formatarDataHora,
   formatarMotivoFechamento,
   formatarStatus
 } from '@/utils/formatters'
+
+const idDe = (ref) => (ref && typeof ref === 'object' ? ref._id : ref)
 
 export default {
   name: 'EventoDetalheView',
@@ -180,6 +237,8 @@ export default {
       previsaoChuva: null,
       carregandoPrevisao: false,
       carregando: true,
+      atividades: [],
+      carregandoAtividades: false,
       inscrevendo: false,
       erro: null,
       mensagem: null,
@@ -214,8 +273,31 @@ export default {
     cidadeEvento() {
       return [this.evento?.cidade, this.evento?.uf].filter(Boolean).join('/')
     },
+    rotuloUniversidade() {
+      const ref = this.evento?.universidadeId
+      if (!ref || typeof ref !== 'object') return ''
+      return ref.sigla ? `${ref.sigla} - ${ref.nome}` : ref.nome
+    },
+    rotuloDepartamento() {
+      const ref = this.evento?.departamentoId
+      if (!ref || typeof ref !== 'object') return ''
+      return ref.nome
+    },
+    rotuloCampus() {
+      const ref = this.evento?.campusId
+      if (!ref || typeof ref !== 'object') return ''
+      const local = [ref.cidade, ref.uf].filter(Boolean).join('/')
+      return local ? `${ref.nome} (${local})` : ref.nome
+    },
     palestrantes() {
       return (this.evento?.palestrantes || []).filter((palestrante) => typeof palestrante === 'object')
+    },
+    podeGerenciarProgramacao() {
+      const usuario = authStorage.getUser()
+      if (!usuario || !this.evento) return false
+      if (usuario.tipoPerfil === 'admin') return true
+      if (usuario.tipoPerfil !== 'organizador') return false
+      return idDe(this.evento.organizadorId) === usuario._id
     }
   },
   async created() {
@@ -228,12 +310,43 @@ export default {
     async carregarEvento() {
       try {
         this.evento = await eventoService.buscarPorId(this.$route.params.id)
-        await this.carregarPrevisaoChuva()
+        await Promise.all([this.carregarPrevisaoChuva(), this.carregarAtividades()])
       } catch (error) {
         this.erro = error.message || 'Erro ao carregar evento.'
       } finally {
         this.carregando = false
       }
+    },
+    async carregarAtividades() {
+      if (!this.evento?._id) return
+      this.carregandoAtividades = true
+      try {
+        this.atividades = await atividadeService.listarPorEvento(this.evento._id)
+      } catch (error) {
+        this.atividades = []
+      } finally {
+        this.carregandoAtividades = false
+      }
+    },
+    horario(iso) {
+      if (!iso) return ''
+      return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    },
+    rotuloTipoAtividade(valor) {
+      return tiposAtividade.find((t) => t.valor === valor)?.rotulo || valor
+    },
+    nomeSalaAtividade(atividade) {
+      const ref = atividade.salaId
+      if (ref) {
+        if (typeof ref === 'object') return ref.bloco ? `${ref.nome} / ${ref.bloco}` : ref.nome
+      }
+      return atividade.salaTexto || ''
+    },
+    nomesPalestrantesAtividade(atividade) {
+      return (atividade.palestrantes || [])
+        .map((p) => (typeof p === 'object' ? p.nome : null))
+        .filter(Boolean)
+        .join(', ')
     },
     async carregarPrevisaoChuva() {
       this.previsaoChuva = null
@@ -307,3 +420,84 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.timeline-atividades-detalhe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline-detalhe-item {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 14px;
+  padding: 14px 16px;
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.timeline-detalhe-horario {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-detalhe-horario strong {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.timeline-detalhe-horario span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+.timeline-detalhe-conteudo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-detalhe-conteudo h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 4px 0 2px;
+}
+
+.timeline-detalhe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+
+.timeline-detalhe-meta strong {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-right: 4px;
+}
+
+@media (max-width: 600px) {
+  .timeline-detalhe-item {
+    grid-template-columns: 1fr;
+  }
+  .timeline-detalhe-horario {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+}
+</style>

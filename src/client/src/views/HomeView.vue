@@ -18,7 +18,6 @@
     <section v-if="mostrandoForm" class="painel-card crud-form-card">
       <h2>{{ editandoId ? 'Editar evento' : 'Cadastrar evento' }}</h2>
       <div v-if="erroForm" class="estado-erro form-erro">{{ erroForm }}</div>
-      <div v-if="sucesso" class="estado-sucesso">{{ sucesso }}</div>
       <div v-if="!carregando && categorias.length === 0" class="estado-erro form-erro">
         Cadastre pelo menos uma categoria antes de criar eventos. O campo Categoria e obrigatorio.
       </div>
@@ -140,6 +139,35 @@
             </select>
           </div>
         </div>
+        <section class="subsecao-form">
+          <h3>Vinculo institucional (opcional)</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Universidade</label>
+              <select v-model="form.universidadeId">
+                <option value="">Sem vinculo</option>
+                <option v-for="u in universidades" :key="u._id" :value="u._id">{{ u.sigla }} - {{ u.nome }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Departamento</label>
+              <select v-model="form.departamentoId" :disabled="!form.universidadeId">
+                <option value="">Sem departamento</option>
+                <option v-for="d in departamentosFiltrados" :key="d._id" :value="d._id">{{ d.nome }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Campus</label>
+              <select v-model="form.campusId" :disabled="!form.universidadeId">
+                <option value="">Sem campus</option>
+                <option v-for="c in campiFiltrados" :key="c._id" :value="c._id">{{ c.nome }}</option>
+              </select>
+            </div>
+          </div>
+          <p class="texto-suave texto-formulario">
+            Vincular o evento a uma universidade ajuda os participantes a encontra-lo na agenda institucional.
+          </p>
+        </section>
         <div v-if="form.status === 'aberto'" class="form-group">
           <label>Encerrar inscricoes em</label>
           <input v-model="form.inscricoesEncerramEm" type="datetime-local" :min="dataHoraMinima" required />
@@ -175,8 +203,6 @@
         </div>
       </form>
     </section>
-
-    <div v-if="sucesso && !mostrandoForm" class="estado-sucesso">{{ sucesso }}</div>
 
     <section class="filtros-barra">
       <div class="form-group">
@@ -242,6 +268,14 @@
             <span class="icone">Cidade</span>
             <span>{{ cidadeEvento(evento) }}</span>
           </div>
+          <div v-if="rotuloUniversidadeEvento(evento)" class="evento-info">
+            <span class="icone">Uni.</span>
+            <span>{{ rotuloUniversidadeEvento(evento) }}</span>
+          </div>
+          <div v-if="rotuloCampusEvento(evento)" class="evento-info">
+            <span class="icone">Campus</span>
+            <span>{{ rotuloCampusEvento(evento) }}</span>
+          </div>
           <div v-if="evento.previsaoTempoAtiva" class="evento-info evento-info-clima">
             <span class="icone">Clima</span>
             <span :class="['previsao-badge', riscoPrevisaoClasse(previsaoCard(evento))]">
@@ -270,6 +304,12 @@
 
           <div v-if="podeGerenciar" class="card-acoes card-acoes-admin">
             <button type="button" class="btn-mini" @click="editar(evento)">Editar</button>
+            <router-link
+              class="btn-mini-link"
+              :to="{ name: 'evento-programacao', params: { id: evento._id } }"
+            >
+              Programacao
+            </router-link>
             <router-link
               class="btn-mini-link"
               :to="{ name: 'evento-participantes', params: { id: evento._id } }"
@@ -315,6 +355,10 @@ import { categoriaService } from '@/services/categoriaService'
 import { certificadoService } from '@/services/certificadoService'
 import { eventoService } from '@/services/eventoService'
 import { palestranteService } from '@/services/palestranteService'
+import { universidadeService } from '@/services/universidadeService'
+import { departamentoService } from '@/services/departamentoService'
+import { campusService } from '@/services/campusService'
+import { toastService } from '@/services/toastService'
 import {
   formatarData,
   formatarDataHora,
@@ -339,10 +383,15 @@ const formInicial = () => ({
   vagas: 1,
   inscricoesEncerramEm: '',
   categoriaId: '',
+  universidadeId: '',
+  departamentoId: '',
+  campusId: '',
   palestrantes: [],
   status: 'fechado',
   permiteCertificado: true
 })
+
+const idDeRef = (ref) => (ref && typeof ref === 'object' ? ref._id : ref)
 
 const toLocalInputDateTime = (date = new Date()) => {
   const offset = date.getTimezoneOffset()
@@ -374,6 +423,9 @@ export default {
       eventos: [],
       categorias: [],
       palestrantes: [],
+      universidades: [],
+      departamentos: [],
+      campi: [],
       previsoesChuva: {},
       previsaoFormulario: null,
       form: formInicial(),
@@ -447,6 +499,14 @@ export default {
       }
 
       return opcoes
+    },
+    departamentosFiltrados() {
+      if (!this.form.universidadeId) return []
+      return this.departamentos.filter((d) => idDeRef(d.universidadeId) === this.form.universidadeId)
+    },
+    campiFiltrados() {
+      if (!this.form.universidadeId) return []
+      return this.campi.filter((c) => idDeRef(c.universidadeId) === this.form.universidadeId)
     }
   },
   watch: {
@@ -462,6 +522,19 @@ export default {
     'form.uf': 'limparPrevisaoFormulario',
     'form.previsaoTempoAtiva'(ativa) {
       if (!ativa) this.limparPrevisaoFormulario()
+    },
+    'form.universidadeId'(novoValor, valorAnterior) {
+      if (novoValor !== valorAnterior) {
+        const depOk = this.departamentos.some(
+          (d) => d._id === this.form.departamentoId && idDeRef(d.universidadeId) === novoValor
+        )
+        if (!depOk) this.form.departamentoId = ''
+
+        const campusOk = this.campi.some(
+          (c) => c._id === this.form.campusId && idDeRef(c.universidadeId) === novoValor
+        )
+        if (!campusOk) this.form.campusId = ''
+      }
     }
   },
   async created() {
@@ -477,14 +550,20 @@ export default {
       this.previsoesChuva = {}
 
       try {
-        const [eventos, categorias, palestrantes] = await Promise.all([
+        const [eventos, categorias, palestrantes, universidades, departamentos, campi] = await Promise.all([
           eventoService.listar(),
           categoriaService.listar(),
-          palestranteService.listar()
+          palestranteService.listar(),
+          universidadeService.listar(),
+          departamentoService.listar(),
+          campusService.listar()
         ])
         this.eventos = eventos
         this.categorias = categorias
         this.palestrantes = palestrantes
+        this.universidades = universidades
+        this.departamentos = departamentos
+        this.campi = campi
         this.carregarPrevisoesChuva()
       } catch (error) {
         this.erro = error.message || 'Nao foi possivel conectar ao servidor.'
@@ -528,7 +607,10 @@ export default {
         cidade: this.form.cidade ? this.form.cidade.trim() : null,
         uf: this.form.uf ? this.form.uf.trim().toUpperCase() : null,
         palestrantes: Array.isArray(this.form.palestrantes) ? this.form.palestrantes : [],
-        inscricoesEncerramEm: this.form.status === 'aberto' ? this.form.inscricoesEncerramEm : null
+        inscricoesEncerramEm: this.form.status === 'aberto' ? this.form.inscricoesEncerramEm : null,
+        universidadeId: this.form.universidadeId || null,
+        departamentoId: this.form.departamentoId || null,
+        campusId: this.form.campusId || null
       }
     },
     async salvar() {
@@ -556,10 +638,10 @@ export default {
 
         if (this.editandoId) {
           await eventoService.atualizar(this.editandoId, this.payload())
-          this.sucesso = 'Evento atualizado com sucesso.'
+          toastService.success('Evento atualizado com sucesso.')
         } else {
           await eventoService.criar(this.payload())
-          this.sucesso = 'Evento cadastrado com sucesso.'
+          toastService.success('Evento cadastrado com sucesso.')
         }
         this.resetarForm()
         this.mostrandoForm = false
@@ -586,6 +668,9 @@ export default {
         vagas: evento.vagas,
         inscricoesEncerramEm: toDateTimeInputValue(evento.inscricoesEncerramEm),
         categoriaId: typeof evento.categoriaId === 'object' ? evento.categoriaId._id : evento.categoriaId,
+        universidadeId: idDeRef(evento.universidadeId) || '',
+        departamentoId: idDeRef(evento.departamentoId) || '',
+        campusId: idDeRef(evento.campusId) || '',
         palestrantes: (evento.palestrantes || []).map((palestrante) => (
           typeof palestrante === 'object' ? palestrante._id : palestrante
         )),
@@ -611,9 +696,10 @@ export default {
           this.fecharForm()
         }
         this.eventoParaExcluir = null
+        toastService.success('Evento excluido com sucesso.')
         await this.carregarDados()
       } catch (error) {
-        this.erro = error.message || 'Erro ao excluir evento.'
+        toastService.error(error.message || 'Erro ao excluir evento.')
       }
     },
     fecharForm() {
@@ -690,6 +776,22 @@ export default {
     cidadeEvento(evento) {
       return [evento.cidade, evento.uf].filter(Boolean).join('/')
     },
+    rotuloUniversidadeEvento(evento) {
+      const ref = evento.universidadeId
+      if (!ref) return ''
+      if (typeof ref === 'object') {
+        return ref.sigla ? `${ref.sigla} - ${ref.nome}` : ref.nome
+      }
+      const u = this.universidades.find((x) => x._id === ref)
+      return u ? `${u.sigla} - ${u.nome}` : ''
+    },
+    rotuloCampusEvento(evento) {
+      const ref = evento.campusId
+      if (!ref) return ''
+      if (typeof ref === 'object') return ref.nome
+      const c = this.campi.find((x) => x._id === ref)
+      return c ? c.nome : ''
+    },
     localidadePrevisao(previsao) {
       return [previsao?.cidade, previsao?.uf].filter(Boolean).join('/') || 'Localizacao consultada'
     },
@@ -741,15 +843,13 @@ export default {
     },
     async emitirCertificados(evento) {
       this.emitindoCertificadosId = evento._id
-      this.erro = null
-      this.sucesso = null
 
       try {
         const resultado = await certificadoService.emitirPorEvento(evento._id)
-        this.sucesso = mensagemEmissaoCertificados(resultado)
+        toastService.success(mensagemEmissaoCertificados(resultado))
         await this.carregarDados()
       } catch (error) {
-        this.erro = error.message || 'Erro ao emitir certificados.'
+        toastService.error(error.message || 'Erro ao emitir certificados.')
       } finally {
         this.emitindoCertificadosId = null
       }

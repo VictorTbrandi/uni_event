@@ -1,4 +1,7 @@
 import { api, authStorage, User } from './api'
+import { Universidade } from './universidadeService'
+import { Departamento } from './departamentoService'
+import { Campus } from './campusService'
 
 export interface Categoria {
   _id: string
@@ -15,6 +18,10 @@ export interface Palestrante {
   areaAtuacao?: string | null
   instituicao?: string | null
   fotoUrl?: string | null
+  universidadeId?: string | Pick<Universidade, '_id' | 'nome' | 'sigla'> | null
+  titulacao?: 'graduado' | 'especialista' | 'mestre' | 'doutor' | 'pos_doutor' | null
+  lattes?: string | null
+  linkedin?: string | null
   ativo?: boolean
 }
 
@@ -35,6 +42,9 @@ export interface Evento {
   vagas: number
   inscricoesEncerramEm?: string | null
   categoriaId: string | Categoria
+  universidadeId?: string | Pick<Universidade, '_id' | 'nome' | 'sigla'> | null
+  departamentoId?: string | Pick<Departamento, '_id' | 'nome' | 'sigla'> | null
+  campusId?: string | Pick<Campus, '_id' | 'nome' | 'sigla' | 'cidade' | 'uf'> | null
   palestrantes: Array<string | Palestrante>
   organizadorId: string | Pick<User, '_id' | 'nome' | 'email'>
   status: 'aberto' | 'fechado' | 'encerrado' | 'cancelado'
@@ -62,6 +72,9 @@ export interface EventoPayload {
   vagas: number
   inscricoesEncerramEm: string | null
   categoriaId: string
+  universidadeId?: string | null
+  departamentoId?: string | null
+  campusId?: string | null
   palestrantes: string[]
   status: string
   permiteCertificado: boolean

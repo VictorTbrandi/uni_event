@@ -6,6 +6,8 @@ export interface User {
   email: string
   tipoPerfil: Perfil
   curso?: string | null
+  universidadeId?: string | { _id: string; nome: string; sigla: string } | null
+  cursoId?: string | { _id: string; nome: string; grau?: string } | null
   ra?: string | null
   ativo?: boolean
 }

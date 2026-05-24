@@ -2,6 +2,9 @@ const Evento = require('../models/Evento');
 const Inscricao = require('../models/Inscricao');
 const Categoria = require('../models/Categoria');
 const Palestrante = require('../models/Palestrante');
+const Universidade = require('../models/Universidade');
+const Departamento = require('../models/Departamento');
+const Campus = require('../models/Campus');
 const ApiError = require('../utils/ApiError');
 const openMeteoGeocodingService = require('./openMeteoGeocodingService');
 const previsaoTempoService = require('./previsaoTempoService');
@@ -28,7 +31,10 @@ const sanitizePayload = (payload) => {
     cidade: payload.cidade ? String(payload.cidade).trim() : null,
     uf: payload.uf ? String(payload.uf).trim().toUpperCase() : null,
     latitude: null,
-    longitude: null
+    longitude: null,
+    universidadeId: payload.universidadeId || null,
+    departamentoId: payload.departamentoId || null,
+    campusId: payload.campusId || null
   };
 
   if (sanitized.status !== 'aberto') {
@@ -114,6 +120,27 @@ class EventoService {
         throw new ApiError(400, 'Um ou mais palestrantes sao invalidos.');
       }
     }
+
+    if (payload.universidadeId) {
+      const universidade = await Universidade.findById(payload.universidadeId);
+      if (!universidade) throw new ApiError(404, 'Universidade nao encontrada.');
+    }
+
+    if (payload.departamentoId) {
+      const departamento = await Departamento.findById(payload.departamentoId);
+      if (!departamento) throw new ApiError(404, 'Departamento nao encontrado.');
+      if (payload.universidadeId && String(departamento.universidadeId) !== String(payload.universidadeId)) {
+        throw new ApiError(400, 'O departamento informado nao pertence a universidade selecionada.');
+      }
+    }
+
+    if (payload.campusId) {
+      const campus = await Campus.findById(payload.campusId);
+      if (!campus) throw new ApiError(404, 'Campus nao encontrado.');
+      if (payload.universidadeId && String(campus.universidadeId) !== String(payload.universidadeId)) {
+        throw new ApiError(400, 'O campus informado nao pertence a universidade selecionada.');
+      }
+    }
   }
 
   async applyWeatherLocation(sanitized) {
@@ -191,6 +218,9 @@ class EventoService {
       .populate('categoriaId', 'nome')
       .populate('palestrantes', 'nome email instituicao')
       .populate('organizadorId', 'nome email')
+      .populate('universidadeId', 'nome sigla')
+      .populate('departamentoId', 'nome sigla')
+      .populate('campusId', 'nome sigla cidade uf')
       .sort({ data: 1, horarioInicio: 1 });
 
     const enriched = await Promise.all(eventos.map((evento) => this.enrich(evento)));
@@ -206,7 +236,10 @@ class EventoService {
     const evento = await Evento.findById(id)
       .populate('categoriaId', 'nome descricao')
       .populate('palestrantes', 'nome email instituicao areaAtuacao')
-      .populate('organizadorId', 'nome email');
+      .populate('organizadorId', 'nome email')
+      .populate('universidadeId', 'nome sigla')
+      .populate('departamentoId', 'nome sigla')
+      .populate('campusId', 'nome sigla cidade uf');
 
     if (!evento) throw new ApiError(404, 'Evento nao encontrado.');
     const enriched = await this.enrich(evento);

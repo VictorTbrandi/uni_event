@@ -4,6 +4,11 @@
       <div class="auth-page">
         <div class="auth-topbar">
           <router-link to="/" class="auth-brand">Uni<span>Event</span></router-link>
+          <div class="navbar-actions" style="margin-left: auto;">
+            <button class="theme-toggle" type="button" :aria-label="tituloToggleTema" :title="tituloToggleTema" @click="alternarTema">
+              {{ iconeToggleTema }}
+            </button>
+          </div>
         </div>
         <main>
           <div class="page-content">
@@ -18,14 +23,19 @@
         <div class="navbar-inner">
           <router-link to="/" class="navbar-brand">Uni<span>Event</span></router-link>
 
-          <div class="nav-menu-wrapper" @click.stop>
-            <button class="nav-menu-btn" aria-label="Menu" @click="toggleMenu">
-              <span></span>
-              <span></span>
-              <span></span>
+          <div class="navbar-actions">
+            <button class="theme-toggle" type="button" :aria-label="tituloToggleTema" :title="tituloToggleTema" @click="alternarTema">
+              {{ iconeToggleTema }}
             </button>
 
-            <div class="nav-dropdown" :class="{ 'is-open': menuAberto }">
+            <div class="nav-menu-wrapper" @click.stop>
+              <button class="nav-menu-btn" aria-label="Menu" @click="toggleMenu">
+                <span></span>
+                <span></span>
+                <span></span>
+              </button>
+
+              <div class="nav-dropdown" :class="{ 'is-open': menuAberto }">
               <div v-if="logado" class="nav-usuario-card">
                 <span class="nav-usuario-nome">{{ nomeUsuario }}</span>
                 <span class="nav-usuario-perfil">{{ labelPerfil }}</span>
@@ -58,6 +68,7 @@
                   <div class="nav-grupo">
                     <span class="nav-secao-label">Administração</span>
                     <router-link to="/admin/usuarios" @click="fecharTudo">Usuários</router-link>
+                    <router-link to="/admin/institucional" @click="fecharTudo">Institucional</router-link>
                   </div>
                 </template>
 
@@ -74,6 +85,7 @@
                   <a href="#" class="nav-sair" @click.prevent="sair">Sair</a>
                 </div>
               </template>
+              </div>
             </div>
           </div>
         </div>
@@ -85,12 +97,16 @@
         </div>
       </main>
     </template>
+
+    <ToastContainer />
   </div>
 </template>
 
 <script>
 import { authService } from '@/services/authService'
 import { authStorage } from '@/services/api'
+import { themeService } from '@/services/themeService'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const perfilLabels = {
   admin: 'Admin',
@@ -100,11 +116,13 @@ const perfilLabels = {
 
 export default {
   name: 'App',
+  components: { ToastContainer },
   data() {
     return {
       logado: authStorage.isAuthenticated(),
       usuario: null,
-      menuAberto: false
+      menuAberto: false,
+      theme: themeService.estado
     }
   },
   computed: {
@@ -125,6 +143,12 @@ export default {
     },
     podeAdmin() {
       return this.usuario?.tipoPerfil === 'admin'
+    },
+    iconeToggleTema() {
+      return this.theme.tema === 'dark' ? '☀' : '☾'
+    },
+    tituloToggleTema() {
+      return this.theme.tema === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'
     }
   },
   created() {
@@ -159,6 +183,9 @@ export default {
       this.usuario = null
       this.fecharTudo()
       this.$router.push('/login')
+    },
+    alternarTema() {
+      themeService.alternar()
     }
   }
 }

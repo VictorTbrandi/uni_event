@@ -29,6 +29,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, perfis: ['organizador', 'admin'] }
   },
   {
+    path: '/eventos/:id/programacao',
+    name: 'evento-programacao',
+    component: () => import('../views/ProgramacaoEventoView.vue')
+  },
+  {
     path: '/eventos/:id',
     name: 'evento-detalhe',
     component: () => import('../views/EventoDetalheView.vue')
@@ -101,6 +106,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/admin/usuarios',
     name: 'admin-usuarios',
     component: () => import('../views/AdminUsuariosView.vue'),
+    meta: { requiresAuth: true, perfis: ['admin'] }
+  },
+  {
+    path: '/admin/institucional',
+    name: 'admin-institucional',
+    component: () => import('../views/PainelInstitucionalView.vue'),
     meta: { requiresAuth: true, perfis: ['admin'] }
   },
   {

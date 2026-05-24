@@ -79,7 +79,10 @@ class AuthService {
   }
 
   async getAuthenticatedUser(userId) {
-    const user = await User.findById(userId).select('-senha');
+    const user = await User.findById(userId)
+      .select('-senha')
+      .populate('universidadeId', 'nome sigla')
+      .populate('cursoId', 'nome grau');
     if (!user) throw new ApiError(404, 'Usuário não encontrado.');
     return user;
   }

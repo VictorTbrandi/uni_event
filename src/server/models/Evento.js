@@ -80,6 +80,21 @@ const eventoSchema = new mongoose.Schema(
       ref: 'Categoria',
       required: true
     },
+    universidadeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Universidade',
+      default: null
+    },
+    departamentoId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Departamento',
+      default: null
+    },
+    campusId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Campus',
+      default: null
+    },
     palestrantes: [
       {
         type: mongoose.Schema.Types.ObjectId,

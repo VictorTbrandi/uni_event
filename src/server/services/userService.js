@@ -10,7 +10,11 @@ class UserService {
   }
 
   async findAll() {
-    return User.find().select('-senha').sort({ nome: 1 });
+    return User.find()
+      .select('-senha')
+      .populate('universidadeId', 'nome sigla')
+      .populate('cursoId', 'nome grau')
+      .sort({ nome: 1 });
   }
 
   async findById(id, currentUser) {
@@ -18,7 +22,10 @@ class UserService {
       throw new ApiError(403, 'Você só pode visualizar seu próprio perfil.');
     }
 
-    const user = await User.findById(id).select('-senha');
+    const user = await User.findById(id)
+      .select('-senha')
+      .populate('universidadeId', 'nome sigla')
+      .populate('cursoId', 'nome grau');
     if (!user) throw new ApiError(404, 'Usuário não encontrado.');
     return user;
   }
@@ -32,14 +39,17 @@ class UserService {
     }
 
     const allowed = currentUser.tipoPerfil === 'admin'
-      ? ['nome', 'email', 'tipoPerfil', 'curso', 'ra', 'ativo']
-      : ['nome', 'email', 'curso', 'ra'];
+      ? ['nome', 'email', 'tipoPerfil', 'curso', 'universidadeId', 'cursoId', 'ra', 'ativo']
+      : ['nome', 'email', 'curso', 'universidadeId', 'cursoId', 'ra'];
 
     const data = pickAllowedFields(payload, allowed);
     Object.assign(user, data);
     await user.save();
 
-    return User.findById(id).select('-senha');
+    return User.findById(id)
+      .select('-senha')
+      .populate('universidadeId', 'nome sigla')
+      .populate('cursoId', 'nome grau');
   }
 
   async delete(id) {

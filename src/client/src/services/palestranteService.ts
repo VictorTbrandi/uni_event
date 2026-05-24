@@ -1,7 +1,28 @@
 import { api } from './api'
 import { Palestrante } from './eventoService'
 
-export type PalestrantePayload = Pick<Palestrante, 'nome' | 'email' | 'biografia' | 'areaAtuacao' | 'instituicao' | 'fotoUrl'>
+export type TitulacaoPalestrante = 'graduado' | 'especialista' | 'mestre' | 'doutor' | 'pos_doutor'
+
+export const titulacoesPermitidas: Array<{ valor: TitulacaoPalestrante; rotulo: string }> = [
+  { valor: 'graduado', rotulo: 'Graduado(a)' },
+  { valor: 'especialista', rotulo: 'Especialista' },
+  { valor: 'mestre', rotulo: 'Mestre' },
+  { valor: 'doutor', rotulo: 'Doutor(a)' },
+  { valor: 'pos_doutor', rotulo: 'Pos-doutor(a)' }
+]
+
+export interface PalestrantePayload {
+  nome: string
+  email: string
+  biografia?: string | null
+  areaAtuacao?: string | null
+  instituicao?: string | null
+  fotoUrl?: string | null
+  universidadeId?: string | null
+  titulacao?: TitulacaoPalestrante | null
+  lattes?: string | null
+  linkedin?: string | null
+}
 
 export const palestranteService = {
   listar() {

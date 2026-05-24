@@ -6,6 +6,8 @@ const createUserValidator = [
   body('senha').isLength({ min: 6 }).withMessage('Senha deve ter no mínimo 6 caracteres.'),
   body('tipoPerfil').isIn(['admin', 'organizador', 'participante']).withMessage('Perfil inválido.'),
   body('curso').optional().isLength({ max: 100 }).withMessage('Curso deve ter no máximo 100 caracteres.'),
+  body('universidadeId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Universidade inválida.'),
+  body('cursoId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Curso (referência) inválido.'),
   body('ra').optional().isLength({ max: 30 }).withMessage('RA deve ter no máximo 30 caracteres.')
 ];
 
@@ -14,6 +16,8 @@ const updateUserValidator = [
   body('email').optional().isEmail().withMessage('E-mail inválido.'),
   body('tipoPerfil').optional().isIn(['admin', 'organizador', 'participante']).withMessage('Perfil inválido.'),
   body('curso').optional().isLength({ max: 100 }).withMessage('Curso deve ter no máximo 100 caracteres.'),
+  body('universidadeId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Universidade inválida.'),
+  body('cursoId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Curso (referência) inválido.'),
   body('ra').optional().isLength({ max: 30 }).withMessage('RA deve ter no máximo 30 caracteres.'),
   body('ativo').optional().isBoolean().withMessage('Ativo deve ser booleano.')
 ];
