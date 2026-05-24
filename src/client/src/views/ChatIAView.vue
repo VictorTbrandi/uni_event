@@ -66,11 +66,7 @@ export default {
           texto: 'Ola! Sou o assistente do UniEvent. Posso ajudar com eventos, inscricoes, certificados, feedbacks e uso do painel.'
         }
       ],
-      sugestoes: [
-        'Como faco inscricao em um evento?',
-        'Como vejo meus certificados?',
-        'Como funciona o resumo de feedbacks?'
-      ],
+      sugestoes: [],
       carregando: false,
       erro: null
     }

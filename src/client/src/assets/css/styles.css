@@ -1889,6 +1889,8 @@ tbody tr:hover {
   color: var(--color-text);
   font-size: 14px;
   line-height: 1.55;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .chat-ia-usuario {
