@@ -2,12 +2,31 @@
   <div class="home-view">
     <section class="home-hero">
       <div class="home-hero-inner">
+        <div class="home-hero-folio">
+          <span><strong>UniEvent</strong> &nbsp;·&nbsp; Boletim Acadêmico</span>
+          <span class="home-hero-folio-divisor" aria-hidden="true"></span>
+          <span>{{ folioEdicao }}</span>
+        </div>
+
         <div class="home-hero-conteudo">
-          <h1 class="home-hero-titulo">Os melhores eventos</h1>
-          <p class="home-hero-subtitulo">Confira os eventos que vão ocorrer no Brasil</p>
+          <h1 class="home-hero-titulo">
+            Os melhores<br />
+            <em>eventos</em><span class="home-hero-titulo-asterisco" aria-hidden="true">✦</span> da semana,
+            <br />reunidos aqui.
+          </h1>
           <p class="home-hero-subtitulo">
-            Descubra eventos do seu interesse ou crie os seus próprios utilizando o UniEvent
+            Um caderno vivo de palestras, oficinas e encontros — atualizado por quem organiza, lido por quem aprende.
           </p>
+          <p class="home-hero-subtitulo">
+            Descubra eventos do seu interesse, ou registre os seus próprios usando o UniEvent.
+          </p>
+        </div>
+
+        <div class="home-hero-rodape">
+          <span>{{ eventos.length || '—' }} eventos catalogados</span>
+          <span>{{ categorias.length || '—' }} áreas de conhecimento</span>
+          <span>Inscrições abertas</span>
+          <span>Certificação digital</span>
         </div>
       </div>
     </section>
@@ -618,6 +637,14 @@ export default {
     },
     usuario() {
       return authStorage.getUser()
+    },
+    folioEdicao() {
+      const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+      const agora = new Date()
+      const mes = meses[agora.getMonth()]
+      const ano = agora.getFullYear()
+      const semana = Math.ceil(((agora - new Date(agora.getFullYear(), 0, 1)) / 86400000 + 1) / 7)
+      return `EDIÇÃO Nº ${String(semana).padStart(2, '0')}  ·  ${mes} · ${ano}`
     },
     podeGerenciar() {
       return ['admin', 'organizador'].includes(this.usuario?.tipoPerfil)

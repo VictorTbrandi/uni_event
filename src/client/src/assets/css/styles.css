@@ -4,45 +4,54 @@
    ============================================================ */
 
 :root {
-  /* Cores base — paleta moderna inspirada em ambiente acadêmico */
-  --color-primary: #4f46e5;          /* indigo-600 */
-  --color-primary-hover: #4338ca;    /* indigo-700 */
-  --color-primary-soft: #eef2ff;     /* indigo-50 */
-  --color-primary-soft-strong: #e0e7ff;
-  --color-primary-on: #ffffff;
+  /* ----------------------------------------------------------------
+     Paleta — editorial brasileiro / papel envelhecido
+     bg = papel mimeografado, primary = verde-cerrado, accent = barro
+     Inspirado em Athos Bulcão, Burle Marx, cadernos universitários
+     ---------------------------------------------------------------- */
+  --color-primary: #1f5e3a;          /* verde-cerrado profundo */
+  --color-primary-hover: #174228;
+  --color-primary-soft: #dceadf;
+  --color-primary-soft-strong: #b9d4c4;
+  --color-primary-on: #fbf6ea;
 
-  --color-accent: #10b981;           /* emerald-500 */
-  --color-accent-hover: #059669;     /* emerald-600 */
-  --color-accent-soft: #ecfdf5;
+  --color-accent: #d4622a;           /* terracota / barro */
+  --color-accent-hover: #b14d1f;
+  --color-accent-soft: #fbe6d6;
 
-  --color-danger: #ef4444;
-  --color-danger-hover: #dc2626;
-  --color-danger-soft: #fee2e2;
+  --color-danger: #a32525;
+  --color-danger-hover: #7e1b1b;
+  --color-danger-soft: #f3d8d3;
 
-  --color-warning: #f59e0b;
-  --color-warning-soft: #fef3c7;
+  --color-warning: #c98008;          /* ocre torrado */
+  --color-warning-soft: #f6e4c0;
 
-  --color-info: #0ea5e9;
-  --color-info-soft: #e0f2fe;
+  --color-info: #356b8a;             /* petróleo desaturado */
+  --color-info-soft: #dde9ee;
 
-  /* Neutros (light theme) */
-  --color-bg: #f5f6fa;
-  --color-bg-elevated: #ffffff;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f9fafb;
-  --color-border: #e5e7eb;
-  --color-border-strong: #d1d5db;
-  --color-text: #111827;
-  --color-text-muted: #4b5563;
-  --color-text-subtle: #6b7280;
-  --color-text-inverse: #ffffff;
+  /* Neutros (light theme) — paleta de papel envelhecido */
+  --color-bg: #ede5d3;               /* papel principal */
+  --color-bg-elevated: #f4ecd7;
+  --color-surface: #fbf6ea;          /* papel claro p/ cards */
+  --color-surface-muted: #e5ddc9;
+  --color-border: #d6cbb1;
+  --color-border-strong: #bcae8e;
+  --color-text: #1b1410;             /* tinta quente, não preto puro */
+  --color-text-muted: #5b4a3a;
+  --color-text-subtle: #8c7a64;
+  --color-text-inverse: #fbf6ea;
 
-  --color-navbar-bg: #0f172a;        /* slate-900 */
-  --color-navbar-bg-hover: #1e293b;
-  --color-navbar-text: #f8fafc;
+  --color-navbar-bg: #1b1410;        /* tinta quente, peso editorial */
+  --color-navbar-bg-hover: #2a1f17;
+  --color-navbar-text: #fbf6ea;
 
-  /* Tipografia */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Cor do "grão" do papel — usado em texturas sutis */
+  --paper-grain: rgba(27, 20, 16, 0.06);
+  --paper-rule: rgba(27, 20, 16, 0.18);
+
+  /* Tipografia — serif editorial + sans variável artesanal */
+  --font-display: 'Fraunces', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Bricolage Grotesque', 'Fraunces', Georgia, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
   /* Espaçamentos (escala) */
@@ -80,46 +89,50 @@
 }
 
 :root[data-theme='dark'] {
-  --color-primary: #818cf8;          /* indigo-400 */
-  --color-primary-hover: #a5b4fc;
-  --color-primary-soft: #312e81;
-  --color-primary-soft-strong: #3730a3;
-  --color-primary-on: #0f172a;
+  /* Tema escuro — "biblioteca à luz de lampião": terras quentes, não slate */
+  --color-primary: #6db488;          /* verde-musgo iluminado */
+  --color-primary-hover: #8ccba4;
+  --color-primary-soft: #1d3a26;
+  --color-primary-soft-strong: #264f33;
+  --color-primary-on: #0e1b13;
 
-  --color-accent: #34d399;
-  --color-accent-hover: #6ee7b7;
-  --color-accent-soft: #064e3b;
+  --color-accent: #e8895a;           /* barro aclarado */
+  --color-accent-hover: #f2a17b;
+  --color-accent-soft: #3a1f12;
 
-  --color-danger: #f87171;
-  --color-danger-hover: #fca5a5;
-  --color-danger-soft: #7f1d1d;
+  --color-danger: #d96a6a;
+  --color-danger-hover: #e58787;
+  --color-danger-soft: #3f1717;
 
-  --color-warning: #fbbf24;
-  --color-warning-soft: #78350f;
+  --color-warning: #e0a847;
+  --color-warning-soft: #3a2710;
 
-  --color-info: #38bdf8;
-  --color-info-soft: #0c4a6e;
+  --color-info: #7ba9c4;
+  --color-info-soft: #1a2a35;
 
-  --color-bg: #0b1120;
-  --color-bg-elevated: #111827;
-  --color-surface: #1f2937;
-  --color-surface-muted: #111827;
-  --color-border: #334155;
-  --color-border-strong: #475569;
-  --color-text: #f8fafc;
-  --color-text-muted: #cbd5e1;
-  --color-text-subtle: #94a3b8;
-  --color-text-inverse: #0f172a;
+  --color-bg: #1a1411;
+  --color-bg-elevated: #221b16;
+  --color-surface: #2a2218;
+  --color-surface-muted: #1f1814;
+  --color-border: #3d3225;
+  --color-border-strong: #56462f;
+  --color-text: #f1e7cd;
+  --color-text-muted: #c8b896;
+  --color-text-subtle: #8d7c5e;
+  --color-text-inverse: #1a1411;
 
-  --color-navbar-bg: #0b1120;
-  --color-navbar-bg-hover: #1f2937;
-  --color-navbar-text: #f8fafc;
+  --color-navbar-bg: #0f0b08;
+  --color-navbar-bg-hover: #1a1411;
+  --color-navbar-text: #f1e7cd;
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.6);
+  --paper-grain: rgba(241, 231, 205, 0.05);
+  --paper-rule: rgba(241, 231, 205, 0.18);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.55);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.65);
 }
 
 /* ============================================================
@@ -142,12 +155,48 @@ html {
 
 body {
   font-family: var(--font-sans);
+  font-variation-settings: 'opsz' 18, 'wght' 420;
   background-color: var(--color-bg);
+  /* Grão de papel — duas texturas sutis sobrepostas */
+  background-image:
+    radial-gradient(circle at 25% 35%, var(--paper-grain) 0.5px, transparent 1px),
+    radial-gradient(circle at 75% 65%, var(--paper-grain) 0.5px, transparent 1px);
+  background-size: 18px 18px, 27px 27px;
+  background-position: 0 0, 9px 9px;
   color: var(--color-text);
-  font-feature-settings: 'cv11', 'ss01';
+  font-feature-settings: 'ss01', 'ss02', 'cv11';
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.55;
   transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-feature-settings: 'ss01';
+  font-variation-settings: 'opsz' 80, 'SOFT' 70, 'wght' 600;
+  letter-spacing: -0.015em;
+  color: var(--color-text);
+}
+
+h4, h5, h6 {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 24, 'SOFT' 60, 'wght' 600;
+  letter-spacing: -0.005em;
+}
+
+/* Helper para destacar palavra em itálico serifado dentro de UI */
+.serif-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-variation-settings: 'opsz' 60, 'SOFT' 100, 'wght' 500;
+}
+
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
 }
 
 a {
@@ -189,7 +238,32 @@ a:hover {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-primary-soft) 100%);
+  background-color: var(--color-bg);
+  background-image:
+    /* Marca d'água "U·E" como brasão de canto */
+    radial-gradient(circle at 90% 10%, var(--paper-grain) 0, transparent 38%),
+    /* Grade de pontos editorial */
+    radial-gradient(circle, var(--paper-rule) 1px, transparent 1.4px);
+  background-size: auto, 28px 28px;
+  background-position: 0 0, 0 0;
+  position: relative;
+}
+
+.auth-page::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary) 0 16.6%,
+    var(--color-accent) 16.6% 33.3%,
+    var(--color-warning) 33.3% 50%,
+    var(--color-text) 50% 66.6%,
+    var(--color-info) 66.6% 83.3%,
+    var(--color-primary) 83.3% 100%
+  );
+  pointer-events: none;
 }
 
 .auth-page main {
@@ -2394,42 +2468,190 @@ tbody tr:hover {
 .home-hero {
   position: relative;
   margin: calc(var(--space-8) * -1) calc(var(--space-8) * -1) 0;
-  padding: var(--space-12) var(--space-8) 0;
-  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 55%, #6d28d9 100%);
-  color: #ffffff;
+  padding: var(--space-12) var(--space-8) var(--space-10);
+  background-color: var(--color-bg-elevated);
+  /* Camadas: pontos editoriais + arco esmeralda + bloco terracota canto */
+  background-image:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-accent) 22%, transparent) 0, transparent 38%),
+    radial-gradient(circle at bottom left, color-mix(in srgb, var(--color-primary) 18%, transparent) 0, transparent 42%),
+    radial-gradient(circle, var(--paper-rule) 1px, transparent 1.4px);
+  background-size: auto, auto, 24px 24px;
+  background-position: 0 0, 0 0, 0 0;
+  color: var(--color-text);
   border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);
+  border-bottom: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+/* Fita superior multicolorida — código de cores editorial */
+.home-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary) 0 22%,
+    var(--color-accent) 22% 38%,
+    var(--color-warning) 38% 50%,
+    var(--color-text) 50% 66%,
+    var(--color-info) 66% 82%,
+    var(--color-primary) 82% 100%
+  );
+}
+
+/* Marca d'água tipográfica gigante — "UE" como folio editorial */
+.home-hero::after {
+  content: 'UE';
+  position: absolute;
+  right: -6px;
+  bottom: -34px;
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 144, 'SOFT' 40, 'wght' 900;
+  font-size: 320px;
+  line-height: 0.85;
+  color: var(--color-text);
+  opacity: 0.045;
+  pointer-events: none;
+  letter-spacing: -0.06em;
 }
 
 .home-hero-inner {
   position: relative;
+  z-index: 1;
   max-width: 1100px;
   margin: 0 auto;
-  padding-bottom: var(--space-10);
+  padding-bottom: var(--space-8);
+}
+
+/* Cabeçalho-folha — edição, data, rule horizontal */
+.home-hero-folio {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--paper-rule);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  opacity: 0;
+  animation: hero-fade-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 80ms forwards;
+}
+
+.home-hero-folio strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.home-hero-folio-divisor {
+  flex: 1;
+  height: 1px;
+  background: var(--paper-rule);
+  margin: 0 var(--space-3);
+  align-self: center;
 }
 
 .home-hero-conteudo {
-  margin-bottom: var(--space-8);
-  max-width: 720px;
+  margin-bottom: var(--space-6);
+  max-width: 820px;
 }
 
 .home-hero-titulo {
-  font-size: 44px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  margin-bottom: var(--space-4);
-  color: #ffffff;
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 144, 'SOFT' 60, 'wght' 700;
+  font-size: clamp(48px, 7vw, 84px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.96;
+  margin-bottom: var(--space-5);
+  color: var(--color-text);
+  text-wrap: balance;
+  opacity: 0;
+  animation: hero-rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 220ms forwards;
+}
+
+/* Aplicado via <em> ou span dentro do título para sotaque serif itálico */
+.home-hero-titulo em {
+  font-style: italic;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'wght' 600;
+  color: var(--color-primary);
+  display: inline-block;
+}
+
+.home-hero-titulo .home-hero-titulo-asterisco {
+  display: inline-block;
+  font-size: 0.55em;
+  color: var(--color-accent);
+  transform: translateY(-0.35em);
+  margin-left: 0.06em;
+  font-style: normal;
 }
 
 .home-hero-subtitulo {
-  font-size: 16px;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-variation-settings: 'opsz' 48, 'SOFT' 100, 'wght' 400;
+  font-size: clamp(17px, 1.4vw, 21px);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  max-width: 56ch;
+  text-wrap: pretty;
+  opacity: 0;
+  animation: hero-rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 360ms forwards;
 }
 
 .home-hero-subtitulo + .home-hero-subtitulo {
-  margin-top: 4px;
+  margin-top: var(--space-2);
+  animation-delay: 460ms;
+}
+
+/* Rodapé do hero — bullets mono em sequência editorial */
+.home-hero-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+  opacity: 0;
+  animation: hero-fade-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 560ms forwards;
+}
+
+.home-hero-rodape span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-hero-rodape span::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--color-accent);
+  display: inline-block;
+}
+
+.home-hero-rodape span:nth-child(2)::before { background: var(--color-primary); }
+.home-hero-rodape span:nth-child(3)::before { background: var(--color-warning); }
+.home-hero-rodape span:nth-child(4)::before { background: var(--color-info); }
+
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .home-search-wrapper {
@@ -2482,13 +2704,22 @@ tbody tr:hover {
   gap: var(--space-2);
   min-width: 160px;
   min-height: 48px;
-  border-radius: var(--radius-md);
-  background-color: var(--color-primary);
-  color: var(--color-primary-on);
-  font-weight: 600;
-  font-size: 15px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-text);
+  color: var(--color-text-inverse);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   padding: 0 var(--space-5);
   border: none;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.home-search-submit:hover {
+  background-color: var(--color-accent);
+  transform: translateY(-1px);
 }
 
 .home-search-chips {
@@ -2634,13 +2865,35 @@ tbody tr:hover {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--paper-rule);
+  position: relative;
+}
+
+.home-secao-cabecalho::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 56px;
+  height: 2px;
+  background: var(--color-accent);
 }
 
 .home-secao-cabecalho h2 {
-  font-size: 22px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 60, 'SOFT' 60, 'wght' 600;
+  font-size: clamp(26px, 2.6vw, 34px);
+  font-weight: 600;
   color: var(--color-text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+}
+
+.home-secao-cabecalho h2 em {
+  font-style: italic;
+  font-variation-settings: 'opsz' 60, 'SOFT' 100, 'wght' 500;
+  color: var(--color-primary);
 }
 
 /* Variante de card no estilo agenda */
@@ -2652,12 +2905,18 @@ tbody tr:hover {
 
 .evento-card-novo .evento-card-image {
   height: 160px;
-  background: linear-gradient(135deg, #2563eb 0%, #6d28d9 100%);
+  background-color: var(--color-primary);
+  background-image:
+    linear-gradient(45deg, rgba(247, 239, 222, 0.06) 25%, transparent 25%, transparent 75%, rgba(247, 239, 222, 0.06) 75%),
+    linear-gradient(45deg, rgba(247, 239, 222, 0.06) 25%, transparent 25%, transparent 75%, rgba(247, 239, 222, 0.06) 75%);
+  background-size: 26px 26px;
+  background-position: 0 0, 13px 13px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: #f7efde;
   position: relative;
+  font-family: var(--font-display);
   font-weight: 700;
   font-size: 28px;
   letter-spacing: 0.06em;
@@ -2799,40 +3058,87 @@ tbody tr:hover {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  min-height: 140px;
+  min-height: 150px;
   padding: var(--space-5);
   border: none;
-  border-radius: var(--radius-lg);
-  color: #ffffff;
+  border-radius: var(--radius-sm);
+  color: #f7efde;
+  font-family: var(--font-display);
   font-weight: 600;
   text-align: left;
   cursor: pointer;
   overflow: hidden;
   transition: transform var(--transition-base), box-shadow var(--transition-base);
+  isolation: isolate;
+}
+
+/* Padrão de azulejos — homenagem a Athos Bulcão / azulejaria brasileira */
+.categoria-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.08) 75%);
+  background-size: 22px 22px;
+  background-position: 0 0, 11px 11px;
+  opacity: 0.6;
+  z-index: -1;
+  transition: opacity var(--transition-base);
+}
+
+/* Etiqueta de catálogo no canto — "CAT · 01" estilo biblioteca */
+.categoria-card::after {
+  content: 'CAT · ' counter(categoria-idx, decimal-leading-zero);
+  counter-increment: categoria-idx;
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(247, 239, 222, 0.65);
+  font-weight: 500;
+}
+
+.categorias-grid {
+  counter-reset: categoria-idx;
 }
 
 .categoria-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
 
+.categoria-card:hover::before {
+  opacity: 1;
+}
+
 .categoria-card-icone {
-  color: #ffffff;
-  opacity: 0.95;
+  color: #f7efde;
+  opacity: 0.9;
+  position: relative;
+  z-index: 1;
 }
 
 .categoria-card-nome {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 36, 'SOFT' 80, 'wght' 600;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  position: relative;
+  z-index: 1;
 }
 
-.categoria-tema-0 { background: linear-gradient(135deg, #1e3a8a, #3b82f6); }
-.categoria-tema-1 { background: linear-gradient(135deg, #0f766e, #14b8a6); }
-.categoria-tema-2 { background: linear-gradient(135deg, #be185d, #ec4899); }
-.categoria-tema-3 { background: linear-gradient(135deg, #b45309, #f59e0b); }
-.categoria-tema-4 { background: linear-gradient(135deg, #4338ca, #8b5cf6); }
-.categoria-tema-5 { background: linear-gradient(135deg, #166534, #22c55e); }
+/* Paleta de tinta editorial — solidos, não gradientes saturados Tailwind */
+.categoria-tema-0 { background-color: #1f5e3a; }   /* verde-cerrado */
+.categoria-tema-1 { background-color: #c2461c; }   /* barro queimado */
+.categoria-tema-2 { background-color: #6e2a3a; }   /* vinho */
+.categoria-tema-3 { background-color: #b07712; }   /* ocre torrado */
+.categoria-tema-4 { background-color: #2a4b6e; }   /* petróleo */
+.categoria-tema-5 { background-color: #1b1410; }   /* tinta */
 
 /* Upload de imagem do evento */
 
