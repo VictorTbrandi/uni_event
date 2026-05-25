@@ -82,16 +82,16 @@
         <div v-if="carregando" class="estado-loading">Carregando usuários...</div>
         <div v-else-if="erroLista" class="estado-erro">{{ erroLista }}</div>
         <div v-else class="tabela-responsiva">
-          <table>
+          <table class="tabela-com-icones">
             <thead>
               <tr>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>Perfil</th>
-                <th>Universidade</th>
-                <th>Curso</th>
-                <th>Status</th>
-                <th>Ações</th>
+                <th><span class="th-conteudo"><IconUser :size="14" stroke-width="1.75" aria-hidden="true" />Nome</span></th>
+                <th><span class="th-conteudo"><IconMail :size="14" stroke-width="1.75" aria-hidden="true" />E-mail</span></th>
+                <th><span class="th-conteudo"><IconUserShield :size="14" stroke-width="1.75" aria-hidden="true" />Perfil</span></th>
+                <th><span class="th-conteudo"><IconBuildingCommunity :size="14" stroke-width="1.75" aria-hidden="true" />Universidade</span></th>
+                <th><span class="th-conteudo"><IconBook :size="14" stroke-width="1.75" aria-hidden="true" />Curso</span></th>
+                <th><span class="th-conteudo"><IconCircleDot :size="14" stroke-width="1.75" aria-hidden="true" />Status</span></th>
+                <th><span class="th-conteudo"><IconSettings :size="14" stroke-width="1.75" aria-hidden="true" />Ações</span></th>
               </tr>
             </thead>
             <tbody>
@@ -101,10 +101,19 @@
                 <td>{{ formatarPerfil(usuario.tipoPerfil) }}</td>
                 <td>{{ siglaUniversidade(usuario) || '-' }}</td>
                 <td>{{ nomeCurso(usuario) || '-' }}</td>
-                <td>{{ usuario.ativo ? 'Ativo' : 'Inativo' }}</td>
+                <td>
+                  <span :class="['status-dot', usuario.ativo ? 'status-dot-ativo' : 'status-dot-inativo']" aria-hidden="true"></span>
+                  {{ usuario.ativo ? 'Ativo' : 'Inativo' }}
+                </td>
                 <td class="acoes-tabela">
-                  <button type="button" class="btn-mini" @click="editar(usuario)">Editar</button>
-                  <button type="button" class="btn-mini btn-mini-perigo" @click="pedirExclusao(usuario)">Excluir</button>
+                  <button type="button" class="btn-mini" @click="editar(usuario)">
+                    <IconPencil :size="14" stroke-width="1.75" aria-hidden="true" />
+                    Editar
+                  </button>
+                  <button type="button" class="btn-mini btn-mini-perigo" @click="pedirExclusao(usuario)">
+                    <IconTrash :size="14" stroke-width="1.75" aria-hidden="true" />
+                    Excluir
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -125,6 +134,17 @@
 </template>
 
 <script>
+import {
+  IconUser,
+  IconMail,
+  IconUserShield,
+  IconBuildingCommunity,
+  IconBook,
+  IconCircleDot,
+  IconSettings,
+  IconPencil,
+  IconTrash
+} from '@tabler/icons-vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { userService } from '@/services/userService'
 import { universidadeService } from '@/services/universidadeService'
@@ -149,7 +169,16 @@ const formInicial = () => ({
 export default {
   name: 'AdminUsuariosView',
   components: {
-    ConfirmModal
+    ConfirmModal,
+    IconUser,
+    IconMail,
+    IconUserShield,
+    IconBuildingCommunity,
+    IconBook,
+    IconCircleDot,
+    IconSettings,
+    IconPencil,
+    IconTrash
   },
   data() {
     return {

@@ -27,7 +27,13 @@ const eventoValidator = [
   body('campusId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Campus invalido.'),
   body('palestrantes').optional().isArray().withMessage('Palestrantes deve ser um array.'),
   body('status').optional().isIn(['aberto', 'fechado', 'encerrado', 'cancelado']).withMessage('Status invalido.'),
-  body('permiteCertificado').optional().isBoolean().withMessage('PermiteCertificado deve ser booleano.')
+  body('permiteCertificado').optional().isBoolean().withMessage('PermiteCertificado deve ser booleano.'),
+  body('imagemUrl')
+    .optional({ nullable: true, checkFalsy: true })
+    .isString()
+    .withMessage('Imagem invalida.')
+    .isLength({ max: 500 })
+    .withMessage('URL da imagem muito longa.')
 ];
 
 module.exports = { eventoValidator };

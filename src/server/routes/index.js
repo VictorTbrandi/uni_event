@@ -14,6 +14,7 @@ const departamentoRoutes = require('./departamentoRoutes');
 const cursoRoutes = require('./cursoRoutes');
 const salaRoutes = require('./salaRoutes');
 const atividadeRoutes = require('./atividadeRoutes');
+const uploadRoutes = require('./uploadRoutes');
 
 const router = express.Router();
 
@@ -32,5 +33,6 @@ router.use('/departamentos', departamentoRoutes);
 router.use('/cursos', cursoRoutes);
 router.use('/salas', salaRoutes);
 router.use('/atividades', atividadeRoutes);
+router.use('/uploads', uploadRoutes);
 
 module.exports = router;

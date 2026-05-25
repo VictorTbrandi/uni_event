@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -19,7 +20,7 @@ const isLocalDevelopmentOrigin = (origin) => {
   return /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 };
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin) || isLocalDevelopmentOrigin(origin)) {
@@ -34,6 +35,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({

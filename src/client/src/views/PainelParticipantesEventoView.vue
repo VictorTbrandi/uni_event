@@ -26,14 +26,14 @@
 
       <div v-if="participantes.length === 0" class="estado-vazio">Nenhum participante inscrito.</div>
       <div v-else class="tabela-responsiva">
-        <table>
+        <table class="tabela-com-icones">
           <thead>
             <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Curso</th>
-              <th>RA</th>
-              <th>Status</th>
+              <th><span class="th-conteudo"><IconUser :size="14" stroke-width="1.75" aria-hidden="true" />Nome</span></th>
+              <th><span class="th-conteudo"><IconMail :size="14" stroke-width="1.75" aria-hidden="true" />E-mail</span></th>
+              <th><span class="th-conteudo"><IconBook :size="14" stroke-width="1.75" aria-hidden="true" />Curso</span></th>
+              <th><span class="th-conteudo"><IconHash :size="14" stroke-width="1.75" aria-hidden="true" />RA</span></th>
+              <th><span class="th-conteudo"><IconCircleDot :size="14" stroke-width="1.75" aria-hidden="true" />Status</span></th>
             </tr>
           </thead>
           <tbody>
@@ -52,6 +52,13 @@
 </template>
 
 <script>
+import {
+  IconUser,
+  IconMail,
+  IconBook,
+  IconHash,
+  IconCircleDot
+} from '@tabler/icons-vue'
 import { authStorage } from '@/services/api'
 import { certificadoService } from '@/services/certificadoService'
 import { eventoService } from '@/services/eventoService'
@@ -60,6 +67,13 @@ import { formatarStatus } from '@/utils/formatters'
 
 export default {
   name: 'PainelParticipantesEventoView',
+  components: {
+    IconUser,
+    IconMail,
+    IconBook,
+    IconHash,
+    IconCircleDot
+  },
   data() {
     return {
       evento: null,

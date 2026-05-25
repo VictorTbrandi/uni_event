@@ -1,40 +1,183 @@
 <template>
-  <div>
-    <div class="page-header page-header-acoes">
-      <div class="page-header-titulo">
-        <div class="linha-titulo-role">
-          <h1>Proximos Eventos</h1>
-          <span v-if="podeGerenciar" class="role-pill">Modo gestor</span>
+  <div class="home-view">
+    <section class="home-hero">
+      <div class="home-hero-inner">
+        <div class="home-hero-conteudo">
+          <h1 class="home-hero-titulo">Os melhores eventos</h1>
+          <p class="home-hero-subtitulo">Confira os eventos que vão ocorrer no Brasil</p>
+          <p class="home-hero-subtitulo">
+            Descubra eventos do seu interesse ou crie os seus próprios utilizando o UniEvent
+          </p>
         </div>
-        <p v-if="podeGerenciar" class="page-subtitle">
-          Cadastre, edite e acompanhe eventos nesta mesma tela.
-        </p>
+      </div>
+    </section>
+
+    <section class="home-search-wrapper">
+      <div class="home-search-card">
+          <form class="home-search-form" @submit.prevent>
+            <input
+              v-model="filtros.busca"
+              type="search"
+              placeholder="Pesquisar por eventos"
+              class="home-search-input"
+              aria-label="Pesquisar por eventos"
+            />
+            <button type="submit" class="home-search-submit">
+              <IconSearch :size="18" stroke-width="2" aria-hidden="true" />
+              Encontrar
+            </button>
+          </form>
+
+          <div class="home-search-chips" ref="filtrosChips">
+            <details
+              class="home-chip"
+              :open="dropdownAberto === 'categoria'"
+              @toggle="onToggleDropdown('categoria', $event)"
+            >
+              <summary>Categoria <IconChevronDown :size="14" stroke-width="2" aria-hidden="true" /></summary>
+              <div class="home-chip-painel">
+                <label class="home-chip-opcao">
+                  <input
+                    v-model="filtros.categoriaId"
+                    type="radio"
+                    name="categoria"
+                    value=""
+                  />
+                  Todas
+                </label>
+                <label
+                  v-for="categoria in categorias"
+                  :key="categoria._id"
+                  class="home-chip-opcao"
+                >
+                  <input
+                    v-model="filtros.categoriaId"
+                    type="radio"
+                    name="categoria"
+                    :value="categoria._id"
+                  />
+                  {{ categoria.nome }}
+                </label>
+              </div>
+            </details>
+
+            <details
+              class="home-chip"
+              :open="dropdownAberto === 'status'"
+              @toggle="onToggleDropdown('status', $event)"
+            >
+              <summary>Status <IconChevronDown :size="14" stroke-width="2" aria-hidden="true" /></summary>
+              <div class="home-chip-painel">
+                <label class="home-chip-opcao">
+                  <input v-model="filtros.status" type="radio" name="status" value="" />
+                  Todos
+                </label>
+                <label class="home-chip-opcao">
+                  <input v-model="filtros.status" type="radio" name="status" value="aberto" />
+                  Aberto
+                </label>
+                <label class="home-chip-opcao">
+                  <input v-model="filtros.status" type="radio" name="status" value="fechado" />
+                  Fechado
+                </label>
+                <label class="home-chip-opcao">
+                  <input v-model="filtros.status" type="radio" name="status" value="encerrado" />
+                  Encerrado
+                </label>
+                <label class="home-chip-opcao">
+                  <input v-model="filtros.status" type="radio" name="status" value="cancelado" />
+                  Cancelado
+                </label>
+              </div>
+            </details>
+
+            <label class="home-chip home-chip-data">
+              <span class="home-chip-label">Data</span>
+              <input v-model="filtros.data" type="date" />
+            </label>
+
+            <button
+              v-if="temFiltrosAtivos"
+              type="button"
+              class="home-chip home-chip-limpar"
+              @click="limparFiltros"
+            >
+              Limpar
+            </button>
+          </div>
+      </div>
+    </section>
+
+    <section v-if="podeGerenciar" class="home-acoes-gestor">
+      <div class="home-acoes-info">
+        <span class="role-pill">Modo gestor</span>
+        <p class="texto-suave">Cadastre, edite e acompanhe eventos nesta mesma tela.</p>
       </div>
       <button
-        v-if="podeGerenciar"
         type="button"
         class="btn-submit btn-header"
         :disabled="mostrandoForm"
         @click="abrirCadastro"
       >
-        {{ mostrandoForm ? 'Formulario aberto' : 'Cadastrar evento' }}
+        {{ mostrandoForm ? 'Formulário aberto' : 'Cadastrar evento' }}
       </button>
-    </div>
+    </section>
 
     <section v-if="mostrandoForm" class="painel-card crud-form-card">
       <h2>{{ editandoId ? 'Editar evento' : 'Cadastrar evento' }}</h2>
       <div v-if="erroForm" class="estado-erro form-erro">{{ erroForm }}</div>
       <div v-if="!carregando && categorias.length === 0" class="estado-erro form-erro">
-        Cadastre pelo menos uma categoria antes de criar eventos. O campo Categoria e obrigatorio.
+        Cadastre pelo menos uma categoria antes de criar eventos. O campo Categoria é obrigatório.
       </div>
 
       <form @submit.prevent="salvar">
         <div class="form-group">
-          <label>Titulo</label>
+          <label>Imagem do evento</label>
+          <div class="upload-imagem">
+            <div class="upload-imagem-preview">
+              <img
+                v-if="previewImagem"
+                :src="previewImagem"
+                alt="Pré-visualização da imagem do evento"
+              />
+              <span v-else class="upload-imagem-placeholder">Sem imagem</span>
+            </div>
+
+            <div class="upload-imagem-acoes">
+              <label class="btn-secundario upload-imagem-btn">
+                {{ enviandoImagem ? 'Enviando...' : (form.imagemUrl ? 'Trocar imagem' : 'Selecionar imagem') }}
+                <input
+                  ref="inputImagem"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  hidden
+                  :disabled="enviandoImagem"
+                  @change="onArquivoSelecionado"
+                />
+              </label>
+              <button
+                v-if="form.imagemUrl"
+                type="button"
+                class="btn-mini btn-mini-perigo"
+                :disabled="enviandoImagem"
+                @click="removerImagem"
+              >
+                Remover
+              </button>
+              <p class="texto-suave texto-formulario">
+                PNG, JPG, WEBP ou GIF. Tamanho máximo 5 MB.
+              </p>
+              <p v-if="erroImagem" class="texto-erro-inline">{{ erroImagem }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Título</label>
           <input v-model="form.titulo" type="text" required />
         </div>
         <div class="form-group">
-          <label>Descricao</label>
+          <label>Descrição</label>
           <textarea v-model="form.descricao" rows="4" required></textarea>
         </div>
         <div class="form-grid">
@@ -43,7 +186,7 @@
             <input v-model="form.data" type="date" :min="dataMinima" required />
           </div>
           <div class="form-group">
-            <label>Inicio</label>
+            <label>Início</label>
             <input v-model="form.horarioInicio" type="time" required />
           </div>
           <div class="form-group">
@@ -55,8 +198,9 @@
           <label>Local</label>
           <input v-model="form.local" type="text" required />
         </div>
+
         <section class="subsecao-form">
-          <h3>Localizacao e clima</h3>
+          <h3>Localização e clima</h3>
           <div class="form-grid">
             <div class="form-group">
               <label>Cidade</label>
@@ -71,11 +215,11 @@
             </div>
           </div>
           <p class="texto-suave texto-formulario">
-            Cidade e UF identificam melhor o evento na agenda. Se a consulta estiver ativa, tambem serao usadas para buscar o clima.
+            Cidade e UF identificam melhor o evento na agenda. Se a consulta estiver ativa, também serão usadas para buscar o clima.
           </p>
           <label class="checkbox-linha">
             <input v-model="form.previsaoTempoAtiva" type="checkbox" />
-            Consultar previsao do tempo neste evento
+            Consultar previsão do tempo neste evento
           </label>
           <div v-if="form.previsaoTempoAtiva" class="previsao-form-acoes">
             <button
@@ -84,9 +228,9 @@
               :disabled="carregandoPrevisaoFormulario"
               @click="consultarPrevisaoFormulario"
             >
-              {{ carregandoPrevisaoFormulario ? 'Consultando...' : 'Consultar previa do clima' }}
+              {{ carregandoPrevisaoFormulario ? 'Consultando...' : 'Consultar prévia do clima' }}
             </button>
-            <span class="texto-suave">A previa nao salva o evento.</span>
+            <span class="texto-suave">A prévia não salva o evento.</span>
           </div>
           <div v-if="previsaoFormulario" class="previsao-detalhe previsao-form-preview">
             <div class="linha-entre">
@@ -98,7 +242,7 @@
             <p class="previsao-mensagem">{{ previsaoFormulario.mensagem }}</p>
             <div v-if="previsaoFormulario.previsaoDisponivel" class="previsao-grid">
               <div>
-                <strong>Condicao</strong>
+                <strong>Condição</strong>
                 <span>{{ previsaoFormulario.condicaoTempo || '-' }}</span>
               </div>
               <div>
@@ -106,7 +250,7 @@
                 <span>{{ formatTemp(previsaoFormulario.temperaturaHorario) }}</span>
               </div>
               <div>
-                <strong>Chuva no horario</strong>
+                <strong>Chuva no horário</strong>
                 <span>{{ formatPercent(previsaoFormulario.probabilidadeChuvaHorario) }}</span>
               </div>
               <div>
@@ -116,9 +260,10 @@
             </div>
           </div>
         </section>
+
         <div class="form-grid">
           <div class="form-group">
-            <label>Carga horaria</label>
+            <label>Carga horária</label>
             <input v-model.number="form.cargaHoraria" type="number" min="1" required />
           </div>
           <div class="form-group">
@@ -137,7 +282,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Inscricoes</label>
+            <label>Inscrições</label>
             <select v-model="form.status">
               <option v-for="opcao in opcoesStatusFormulario" :key="opcao.valor" :value="opcao.valor">
                 {{ opcao.rotulo }}
@@ -145,13 +290,14 @@
             </select>
           </div>
         </div>
+
         <section class="subsecao-form">
-          <h3>Vinculo institucional (opcional)</h3>
+          <h3>Vínculo institucional (opcional)</h3>
           <div class="form-grid">
             <div class="form-group">
               <label>Universidade</label>
               <select v-model="form.universidadeId">
-                <option value="">Sem vinculo</option>
+                <option value="">Sem vínculo</option>
                 <option v-for="u in universidades" :key="u._id" :value="u._id">{{ u.sigla }} - {{ u.nome }}</option>
               </select>
             </div>
@@ -171,11 +317,12 @@
             </div>
           </div>
           <p class="texto-suave texto-formulario">
-            Vincular o evento a uma universidade ajuda os participantes a encontra-lo na agenda institucional.
+            Vincular o evento a uma universidade ajuda os participantes a encontrá-lo na agenda institucional.
           </p>
         </section>
+
         <div v-if="form.status === 'aberto'" class="form-group">
-          <label>Encerrar inscricoes em</label>
+          <label>Encerrar inscrições em</label>
           <input v-model="form.inscricoesEncerramEm" type="datetime-local" :min="dataHoraMinima" required />
         </div>
         <div class="form-group">
@@ -202,119 +349,101 @@
         </label>
 
         <div class="card-acoes card-acoes-linha">
-          <button type="submit" :disabled="salvando || categorias.length === 0" class="btn-submit">
-            {{ salvando ? 'Salvando...' : (editandoId ? 'Salvar alteracoes' : 'Cadastrar') }}
+          <button type="submit" :disabled="salvando || categorias.length === 0 || enviandoImagem" class="btn-submit">
+            {{ salvando ? 'Salvando...' : (editandoId ? 'Salvar alterações' : 'Cadastrar') }}
           </button>
           <button type="button" class="btn-secundario" @click="fecharForm">Cancelar</button>
         </div>
       </form>
     </section>
 
-    <section class="filtros-barra">
-      <div class="form-group">
-        <label>Buscar</label>
-        <input v-model="filtros.busca" type="search" placeholder="Titulo, local ou cidade" />
+    <section class="home-secao">
+      <div class="home-secao-cabecalho">
+        <h2>Eventos em destaque</h2>
       </div>
-      <div class="form-group">
-        <label>Categoria</label>
-        <select v-model="filtros.categoriaId">
-          <option value="">Todas</option>
-          <option v-for="categoria in categorias" :key="categoria._id" :value="categoria._id">
-            {{ categoria.nome }}
-          </option>
-        </select>
+
+      <div v-if="carregando" class="estado-loading">Carregando eventos...</div>
+      <div v-else-if="erro" class="estado-erro">{{ erro }}</div>
+      <div v-else-if="eventosDestaque.length === 0" class="estado-vazio">
+        Nenhum evento em destaque.
       </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select v-model="filtros.status">
-          <option value="">Todos</option>
-          <option value="aberto">Aberto</option>
-          <option value="fechado">Fechado</option>
-          <option value="encerrado">Encerrado</option>
-          <option value="cancelado">Cancelado</option>
-        </select>
+
+      <div v-else class="eventos-container eventos-container-destaque">
+        <EventoCard
+          v-for="evento in eventosDestaque"
+          :key="evento._id"
+          :evento="evento"
+        >
+          <template #acoes="{ evento: ev }">
+            <button
+              type="button"
+              class="btn-inscrever evento-card-inscrever"
+              :disabled="!inscricaoDisponivel(ev)"
+              @click="irParaEvento(ev._id)"
+            >
+              {{ inscricaoDisponivel(ev) ? 'Inscrever-se' : 'Indisponível' }}
+            </button>
+          </template>
+        </EventoCard>
       </div>
-      <div class="form-group">
-        <label>Data</label>
-        <input v-model="filtros.data" type="date" />
-      </div>
-      <button type="button" class="btn-secundario" @click="limparFiltros">Limpar</button>
     </section>
 
-    <div v-if="carregando" class="estado-loading">Carregando eventos...</div>
-    <div v-else-if="erro" class="estado-erro">{{ erro }}</div>
-    <div v-else-if="eventosFiltrados.length === 0" class="estado-vazio">
-      Nenhum evento disponivel no momento.
-    </div>
+    <section v-if="categorias.length" class="home-secao">
+      <div class="home-secao-cabecalho">
+        <h2>Encontre eventos na sua área</h2>
+      </div>
+      <div class="categorias-grid">
+        <button
+          v-for="(categoria, idx) in categorias.slice(0, 8)"
+          :key="categoria._id"
+          type="button"
+          :class="['categoria-card', `categoria-tema-${idx % 6}`]"
+          @click="filtrarPorCategoria(categoria._id)"
+        >
+          <component
+            :is="iconeCategoria(idx)"
+            :size="32"
+            stroke-width="1.6"
+            class="categoria-card-icone"
+            aria-hidden="true"
+          />
+          <span class="categoria-card-nome">{{ categoria.nome }}</span>
+        </button>
+      </div>
+    </section>
 
-    <div v-else class="eventos-container">
-      <article v-for="evento in eventosFiltrados" :key="evento._id" class="evento-card">
-        <div class="evento-card-image">Evento</div>
-        <div class="evento-card-body">
-          <div class="linha-entre">
-            <span class="tag">{{ nomeCategoria(evento) }}</span>
-            <span :class="['status-tag', `status-${evento.status}`]">{{ statusEvento(evento) }}</span>
-          </div>
+    <section v-if="!carregando && !erro && eventosFiltrados.length > 0" class="home-secao">
+      <div class="home-secao-cabecalho">
+        <h2>Todos os eventos</h2>
+        <span class="texto-suave">{{ eventosFiltrados.length }} {{ eventosFiltrados.length === 1 ? 'evento' : 'eventos' }}</span>
+      </div>
 
-          <h3>{{ evento.titulo }}</h3>
+      <div class="eventos-container">
+        <article
+          v-for="evento in eventosFiltrados"
+          :key="evento._id"
+          class="evento-card-wrapper"
+        >
+          <EventoCard :evento="evento">
+            <template #acoes="{ evento: ev }">
+              <button
+                type="button"
+                class="btn-inscrever evento-card-inscrever"
+                :disabled="!inscricaoDisponivel(ev)"
+                @click="irParaEvento(ev._id)"
+              >
+                {{ inscricaoDisponivel(ev) ? 'Inscrever-se' : 'Inscrições fechadas' }}
+              </button>
+            </template>
+          </EventoCard>
 
-          <div class="evento-info">
-            <span class="icone">Data</span>
-            <span>{{ formatarData(evento.data) }}</span>
-          </div>
-          <div class="evento-info">
-            <span class="icone">Hora</span>
-            <span>{{ evento.horarioInicio }} - {{ evento.horarioFim }}</span>
-          </div>
-          <div class="evento-info">
-            <span class="icone">Local</span>
-            <span>{{ evento.local }}</span>
-          </div>
-          <div v-if="cidadeEvento(evento)" class="evento-info">
-            <span class="icone">Cidade</span>
-            <span>{{ cidadeEvento(evento) }}</span>
-          </div>
-          <div v-if="rotuloUniversidadeEvento(evento)" class="evento-info">
-            <span class="icone">Uni.</span>
-            <span>{{ rotuloUniversidadeEvento(evento) }}</span>
-          </div>
-          <div v-if="rotuloCampusEvento(evento)" class="evento-info">
-            <span class="icone">Campus</span>
-            <span>{{ rotuloCampusEvento(evento) }}</span>
-          </div>
-          <div v-if="evento.previsaoTempoAtiva" class="evento-info evento-info-clima">
-            <span class="icone">Clima</span>
-            <span :class="['previsao-badge', riscoPrevisaoClasse(previsaoCard(evento))]">
-              {{ resumoPrevisaoCard(evento) }}
-            </span>
-          </div>
-          <div class="evento-info">
-            <span class="icone">Palestrantes</span>
-            <span>{{ nomesPalestrantes(evento) }}</span>
-          </div>
-          <div v-if="evento.inscricoesEncerramEm" class="evento-info">
-            <span class="icone">Inscricoes</span>
-            <span>ate {{ formatarDataHora(evento.inscricoesEncerramEm) }}</span>
-          </div>
-
-          <p :class="['evento-vagas', { esgotado: vagasDisponiveis(evento) === 0 }]">
-            {{ vagasDisponiveis(evento) }} de {{ evento.vagas }} vagas disponiveis
-          </p>
-
-          <div class="card-acoes">
-            <button class="btn-inscrever" :disabled="!inscricaoDisponivel(evento)" @click="irParaEvento(evento._id)">
-              {{ inscricaoDisponivel(evento) ? 'Inscrever-se' : 'Inscricoes fechadas' }}
-            </button>
-            <router-link :to="`/eventos/${evento._id}`" class="btn-detalhe">Ver detalhes</router-link>
-          </div>
-
-          <div v-if="podeGerenciar" class="card-acoes card-acoes-admin">
+          <div v-if="podeGerenciar" class="card-acoes card-acoes-admin evento-card-admin">
             <button type="button" class="btn-mini" @click="editar(evento)">Editar</button>
             <router-link
               class="btn-mini-link"
               :to="{ name: 'evento-programacao', params: { id: evento._id } }"
             >
-              Programacao
+              Programação
             </router-link>
             <router-link
               class="btn-mini-link"
@@ -339,9 +468,9 @@
             </button>
             <button type="button" class="btn-mini btn-mini-perigo" @click="pedirExclusao(evento)">Excluir</button>
           </div>
-        </div>
-      </article>
-    </div>
+        </article>
+      </div>
+    </section>
 
     <ConfirmModal
       :aberto="Boolean(eventoParaExcluir)"
@@ -355,7 +484,20 @@
 </template>
 
 <script>
+import {
+  IconSearch,
+  IconChevronDown,
+  IconSchool,
+  IconBriefcase,
+  IconPalette,
+  IconMicroscope,
+  IconScale,
+  IconStethoscope,
+  IconDeviceLaptop,
+  IconBooks
+} from '@tabler/icons-vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
+import EventoCard from '@/components/EventoCard.vue'
 import { authStorage } from '@/services/api'
 import { categoriaService } from '@/services/categoriaService'
 import { certificadoService } from '@/services/certificadoService'
@@ -365,9 +507,8 @@ import { universidadeService } from '@/services/universidadeService'
 import { departamentoService } from '@/services/departamentoService'
 import { campusService } from '@/services/campusService'
 import { toastService } from '@/services/toastService'
+import { uploadService } from '@/services/uploadService'
 import {
-  formatarData,
-  formatarDataHora,
   formatarMotivoFechamento,
   formatarStatus,
   toDateInputValue,
@@ -394,7 +535,8 @@ const formInicial = () => ({
   campusId: '',
   palestrantes: [],
   status: 'fechado',
-  permiteCertificado: true
+  permiteCertificado: true,
+  imagemUrl: ''
 })
 
 const idDeRef = (ref) => (ref && typeof ref === 'object' ? ref._id : ref)
@@ -419,10 +561,24 @@ const ufsBrasil = [
   'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ]
 
+const ICONES_CATEGORIA = [
+  IconSchool,
+  IconBriefcase,
+  IconPalette,
+  IconMicroscope,
+  IconScale,
+  IconStethoscope,
+  IconDeviceLaptop,
+  IconBooks
+]
+
 export default {
   name: 'HomeView',
   components: {
-    ConfirmModal
+    ConfirmModal,
+    EventoCard,
+    IconSearch,
+    IconChevronDown
   },
   data() {
     return {
@@ -443,6 +599,7 @@ export default {
         status: '',
         data: ''
       },
+      dropdownAberto: null,
       carregando: true,
       salvando: false,
       carregandoPrevisaoFormulario: false,
@@ -450,7 +607,9 @@ export default {
       erroForm: null,
       sucesso: null,
       eventoParaExcluir: null,
-      emitindoCertificadosId: null
+      emitindoCertificadosId: null,
+      enviandoImagem: false,
+      erroImagem: null
     }
   },
   computed: {
@@ -465,7 +624,15 @@ export default {
     },
     mensagemExclusao() {
       const titulo = this.eventoParaExcluir?.titulo || 'este evento'
-      return `Tem certeza que deseja excluir "${titulo}"? Essa acao nao pode ser desfeita.`
+      return `Tem certeza que deseja excluir "${titulo}"? Essa ação não pode ser desfeita.`
+    },
+    temFiltrosAtivos() {
+      return Boolean(
+        this.filtros.busca ||
+        this.filtros.categoriaId ||
+        this.filtros.status ||
+        this.filtros.data
+      )
     },
     eventosFiltrados() {
       const busca = this.filtros.busca.trim().toLowerCase()
@@ -487,6 +654,12 @@ export default {
           (!this.filtros.data || dataEvento === this.filtros.data)
         )
       })
+    },
+    eventosDestaque() {
+      return this.eventosFiltrados.slice(0, 4)
+    },
+    previewImagem() {
+      return uploadService.resolveUrl(this.form.imagemUrl)
     },
     dataMinima() {
       return toLocalInputDateTime().slice(0, 10)
@@ -546,10 +719,32 @@ export default {
   async created() {
     await this.carregarDados()
   },
+  mounted() {
+    document.addEventListener('click', this.onDocumentoClick)
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.onDocumentoClick)
+  },
   methods: {
-    formatarData,
-    formatarDataHora,
     formatarStatus,
+    formatarMotivoFechamento,
+    iconeCategoria(index) {
+      return ICONES_CATEGORIA[index % ICONES_CATEGORIA.length]
+    },
+    onToggleDropdown(nome, event) {
+      if (event.target.open) {
+        this.dropdownAberto = nome
+      } else if (this.dropdownAberto === nome) {
+        this.dropdownAberto = null
+      }
+    },
+    onDocumentoClick(event) {
+      if (!this.dropdownAberto) return
+      const container = this.$refs.filtrosChips
+      if (container && !container.contains(event.target)) {
+        this.dropdownAberto = null
+      }
+    },
     async carregarDados() {
       this.carregando = true
       this.erro = null
@@ -572,7 +767,7 @@ export default {
         this.campi = campi
         this.carregarPrevisoesChuva()
       } catch (error) {
-        this.erro = error.message || 'Nao foi possivel conectar ao servidor.'
+        this.erro = error.message || 'Não foi possível conectar ao servidor.'
       } finally {
         this.carregando = false
       }
@@ -588,7 +783,7 @@ export default {
           this.registrarPrevisaoCard(evento._id, {
             previsaoDisponivel: false,
             nivelRisco: 'INDISPONIVEL',
-            mensagem: 'Previsao do tempo indisponivel'
+            mensagem: 'Previsão do tempo indisponível'
           })
         }
       }))
@@ -609,6 +804,26 @@ export default {
       this.erroForm = null
       this.sucesso = null
     },
+    async onArquivoSelecionado(event) {
+      const arquivo = event.target.files?.[0]
+      event.target.value = ''
+      if (!arquivo) return
+
+      this.erroImagem = null
+      this.enviandoImagem = true
+      try {
+        const resposta = await uploadService.enviarImagemEvento(arquivo)
+        this.form.imagemUrl = resposta.url
+      } catch (error) {
+        this.erroImagem = error.message || 'Não foi possível enviar a imagem.'
+      } finally {
+        this.enviandoImagem = false
+      }
+    },
+    removerImagem() {
+      this.form.imagemUrl = ''
+      this.erroImagem = null
+    },
     payload() {
       return {
         ...this.form,
@@ -620,7 +835,8 @@ export default {
         inscricoesEncerramEm: this.form.status === 'aberto' ? this.form.inscricoesEncerramEm : null,
         universidadeId: this.form.universidadeId || null,
         departamentoId: this.form.departamentoId || null,
-        campusId: this.form.campusId || null
+        campusId: this.form.campusId || null,
+        imagemUrl: this.form.imagemUrl || null
       }
     },
     async salvar() {
@@ -634,7 +850,7 @@ export default {
         agora.setSeconds(0, 0)
 
         if (!inicio || inicio < agora) {
-          this.erroForm = 'Nao e permitido cadastrar ou editar eventos com data e hora retroativas.'
+          this.erroForm = 'Não é permitido cadastrar ou editar eventos com data e hora retroativas.'
           return
         }
 
@@ -642,7 +858,7 @@ export default {
         const uf = this.form.uf?.trim()
 
         if (this.form.previsaoTempoAtiva && (!cidade || !uf)) {
-          this.erroForm = 'Informe cidade e UF para consultar a previsao do tempo.'
+          this.erroForm = 'Informe cidade e UF para consultar a previsão do tempo.'
           return
         }
 
@@ -687,12 +903,14 @@ export default {
         status: ['aberto', 'cancelado'].includes(evento.statusConfigurado || evento.status)
           ? (evento.statusConfigurado || evento.status)
           : 'fechado',
-        permiteCertificado: evento.permiteCertificado
+        permiteCertificado: evento.permiteCertificado,
+        imagemUrl: evento.imagemUrl || ''
       }
       this.mostrandoForm = true
       this.erroForm = null
       this.sucesso = null
       this.previsaoFormulario = null
+      this.erroImagem = null
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     pedirExclusao(evento) {
@@ -708,7 +926,7 @@ export default {
           this.fecharForm()
         }
         this.eventoParaExcluir = null
-        toastService.success('Evento excluido com sucesso.')
+        toastService.success('Evento excluído com sucesso.')
         await this.carregarDados()
       } catch (error) {
         toastService.error(error.message || 'Erro ao excluir evento.')
@@ -725,6 +943,7 @@ export default {
       this.editandoId = null
       this.previsaoFormulario = null
       this.carregandoPrevisaoFormulario = false
+      this.erroImagem = null
     },
     limparPrevisaoFormulario() {
       this.previsaoFormulario = null
@@ -737,14 +956,14 @@ export default {
       const uf = this.form.uf?.trim().toUpperCase()
 
       if (!this.form.data || !this.form.horarioInicio || !cidade || !uf) {
-        this.erroForm = 'Informe data, horario de inicio, cidade e UF para consultar a previa do clima.'
+        this.erroForm = 'Informe data, horário de início, cidade e UF para consultar a prévia do clima.'
         return
       }
 
       this.carregandoPrevisaoFormulario = true
       try {
         this.previsaoFormulario = await eventoService.previsaoChuvaPreview({
-          titulo: this.form.titulo || 'Previa do evento',
+          titulo: this.form.titulo || 'Prévia do evento',
           data: this.form.data,
           horarioInicio: this.form.horarioInicio,
           horarioFim: this.form.horarioFim,
@@ -752,23 +971,13 @@ export default {
           uf
         })
       } catch (error) {
-        this.erroForm = error.message || 'Nao foi possivel consultar a previsao do tempo no momento.'
+        this.erroForm = error.message || 'Não foi possível consultar a previsão do tempo no momento.'
       } finally {
         this.carregandoPrevisaoFormulario = false
       }
     },
     idCategoria(evento) {
       return typeof evento.categoriaId === 'object' ? evento.categoriaId._id : evento.categoriaId
-    },
-    nomeCategoria(evento) {
-      return typeof evento.categoriaId === 'object' ? evento.categoriaId.nome : 'Sem categoria'
-    },
-    nomesPalestrantes(evento) {
-      const nomes = (evento.palestrantes || []).map((palestrante) => (
-        typeof palestrante === 'object' ? palestrante.nome : ''
-      )).filter(Boolean)
-
-      return nomes.length ? nomes.join(', ') : 'A definir'
     },
     descricaoPalestrante(palestrante) {
       return [palestrante.areaAtuacao, palestrante.instituicao].filter(Boolean).join(' - ') || 'Sem detalhes adicionais'
@@ -779,46 +988,8 @@ export default {
     inscricaoDisponivel(evento) {
       return evento.status === 'aberto' && this.vagasDisponiveis(evento) > 0
     },
-    statusEvento(evento) {
-      if (evento.status === 'fechado' && evento.motivoFechamentoInscricao) {
-        return formatarMotivoFechamento(evento.motivoFechamentoInscricao)
-      }
-      return formatarStatus(evento.status)
-    },
-    cidadeEvento(evento) {
-      return [evento.cidade, evento.uf].filter(Boolean).join('/')
-    },
-    rotuloUniversidadeEvento(evento) {
-      const ref = evento.universidadeId
-      if (!ref) return ''
-      if (typeof ref === 'object') {
-        return ref.sigla ? `${ref.sigla} - ${ref.nome}` : ref.nome
-      }
-      const u = this.universidades.find((x) => x._id === ref)
-      return u ? `${u.sigla} - ${u.nome}` : ''
-    },
-    rotuloCampusEvento(evento) {
-      const ref = evento.campusId
-      if (!ref) return ''
-      if (typeof ref === 'object') return ref.nome
-      const c = this.campi.find((x) => x._id === ref)
-      return c ? c.nome : ''
-    },
     localidadePrevisao(previsao) {
-      return [previsao?.cidade, previsao?.uf].filter(Boolean).join('/') || 'Localizacao consultada'
-    },
-    previsaoCard(evento) {
-      return this.previsoesChuva[evento._id] || null
-    },
-    resumoPrevisaoCard(evento) {
-      const previsao = this.previsaoCard(evento)
-      if (!previsao) return 'Consultando...'
-      if (!previsao.previsaoDisponivel) return 'Clima indisponivel'
-
-      const temperatura = this.formatTemp(previsao.temperaturaHorario)
-      const chuva = this.formatPercent(previsao.probabilidadeChuvaHorario)
-      if (temperatura !== '-') return `${temperatura} - chuva ${chuva}`
-      return `Chuva ${chuva} no horario`
+      return [previsao?.cidade, previsao?.uf].filter(Boolean).join('/') || 'Localização consultada'
     },
     riscoPrevisaoClasse(previsao) {
       const risco = previsao?.nivelRisco || 'INDISPONIVEL'
@@ -829,15 +1000,12 @@ export default {
         BAIXO_RISCO: 'Baixo risco',
         RISCO_MODERADO: 'Risco moderado',
         ALTO_RISCO: 'Alto risco',
-        INDISPONIVEL: 'Indisponivel'
+        INDISPONIVEL: 'Indisponível'
       }
-      return labels[risco] || 'Indisponivel'
+      return labels[risco] || 'Indisponível'
     },
     formatPercent(value) {
       return Number.isFinite(Number(value)) ? `${Number(value)}%` : '-'
-    },
-    formatMm(value) {
-      return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} mm` : '-'
     },
     formatTemp(value) {
       return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} C` : '-'
@@ -865,6 +1033,12 @@ export default {
       } finally {
         this.emitindoCertificadosId = null
       }
+    },
+    filtrarPorCategoria(categoriaId) {
+      this.filtros.categoriaId = categoriaId
+      this.$nextTick(() => {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+      })
     },
     limparFiltros() {
       this.filtros = { busca: '', categoriaId: '', status: '', data: '' }
